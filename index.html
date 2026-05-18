@@ -101,6 +101,27 @@
   .due-tag.ok{background:rgba(47,148,96,.14);color:var(--green)}
 
   .divider{display:flex;align-items:center;gap:14px;margin:30px 0 16px}
+  .cmd-split{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;margin-bottom:4px}
+  .cmd-left{min-width:0}
+  .cmd-right{display:flex;flex-direction:column;gap:14px}
+  .widget{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:15px 16px}
+  .widget-h{font-family:'Archivo',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:12px}
+  .widget-sub{font-size:11px;color:var(--ink-faint);margin:-6px 0 12px}
+  .nc-num{font-size:46px;font-weight:800;line-height:1;letter-spacing:-.03em;color:var(--orange)}
+  .nc-num.warn{color:var(--red)}
+  .nc-num.idle{color:var(--ink-faint);font-size:20px;font-weight:700}
+  .nc-unit{font-size:13px;color:var(--ink-soft);margin-top:6px}
+  .nc-bar{height:6px;border-radius:6px;background:var(--panel-3);margin-top:14px;overflow:hidden}
+  .nc-bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--orange),var(--orange-bright));transition:width .5s}
+  .nc-meta{font-size:11px;color:var(--ink-faint);margin-top:9px}
+  .li-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+  .li-row:last-child{border-bottom:0}
+  .li-box{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--line-2);flex:none;display:flex;align-items:center;justify-content:center;transition:.14s}
+  .li-row.done .li-box{background:var(--orange);border-color:var(--orange);color:#fff}
+  .li-row.done .li-label{color:var(--ink-faint);text-decoration:line-through}
+  .li-label{font-size:12.5px;color:var(--ink)}
+  .li-count{font-size:11px;color:var(--ink-faint);margin-top:10px;text-align:right}
+  @media(max-width:900px){ .cmd-split{grid-template-columns:1fr} .cmd-right{flex-direction:row;flex-wrap:wrap} .cmd-right .widget{flex:1;min-width:240px} }
   .cal-mini-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin:18px 0 4px;box-shadow:var(--shadow);overflow:hidden}
   .cal-mini-head{display:flex;align-items:center;gap:11px;padding:13px 16px;cursor:pointer;user-select:none}
   .cal-mini-head:hover{background:var(--panel-2)}
@@ -130,6 +151,10 @@
   .btn{appearance:none;border:1px solid var(--orange);background:var(--orange);color:#fff;font-family:'Archivo',sans-serif;font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:8px 13px;border-radius:7px;cursor:pointer;transition:.15s;white-space:nowrap;font-weight:600}
   .btn:hover{background:var(--orange-bright);border-color:var(--orange-bright)}
   .btn.ghost{background:transparent;color:var(--ink-soft);border-color:var(--line-2)}
+  .calmode{display:inline-flex;gap:0;margin-left:6px;border:1px solid var(--line-2);border-radius:7px;overflow:hidden}
+  .calmode .btn{border:0;border-radius:0;margin:0}
+  .calmode .btn.active{background:var(--orange);color:#fff}
+  .calmode .btn:not(.active){background:transparent;color:var(--ink-soft)}
   .btn.ghost:hover{background:var(--panel-2);color:var(--ink)}
   .btn.sm{padding:5px 10px;font-size:10px}
 
@@ -144,6 +169,14 @@
   .cin:hover{border-color:var(--line-2);background:var(--bg)}
   .cin:focus{border-color:var(--orange);background:var(--bg);outline:none}
   .cin::placeholder{color:var(--ink-faint)}
+  /* Date fields: always show a clear, themed calendar button */
+  input[type="date"].cin{border-color:var(--line-2);cursor:pointer;position:relative}
+  input[type="date"].cin::-webkit-calendar-picker-indicator{
+    opacity:1;cursor:pointer;padding:2px;border-radius:4px;
+    filter:var(--cal-icon-filter);}
+  input[type="date"].cin::-webkit-calendar-picker-indicator:hover{background:var(--orange-dim)}
+  :root,[data-theme="light"]{--cal-icon-filter:none}
+  [data-theme="dark"]{--cal-icon-filter:invert(1) brightness(1.4)}
   td .sub{font-family:'Archivo',sans-serif;font-size:10px;color:var(--ink-faint);padding:2px 9px 0}
   .delx{appearance:none;border:1px solid var(--line-2);background:transparent;color:var(--ink-faint);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:14px;line-height:1}
   .delx:hover{border-color:var(--red);color:var(--red)}
@@ -217,7 +250,6 @@
     <button data-tab="editions">Editions</button>
     <button data-tab="contributors">Contributors</button>
     <button data-tab="prompts">Claude Prompts</button>
-    <button data-tab="guide">How it works</button>
   </nav>
 
   <!-- COMMAND CENTRE -->
@@ -230,12 +262,29 @@
         <div class="spacer"></div>
         <div class="meta" id="focusMeta"></div>
       </div>
-      <div class="sumline" id="sumLine"></div>
-      <div class="sec-head" style="margin-bottom:12px">
-        <div><h2>What matters for this edition</h2><div class="sub">Open tasks for the focus edition, grouped by category, worst risk first. Click a category to expand.</div></div>
-        <button class="btn" onclick="buildFocusBrief()">Ask Claude what to prioritise</button>
+
+      <div class="cmd-split">
+        <div class="cmd-left">
+          <div class="sumline" id="sumLine"></div>
+          <div class="sec-head" style="margin-bottom:12px">
+            <div><h2>What matters for this edition</h2><div class="sub">Open tasks, grouped by category, worst risk first. Click a category to expand.</div></div>
+            <button class="btn" onclick="buildFocusBrief()">Ask Claude to prioritise</button>
+          </div>
+          <div id="catList"></div>
+        </div>
+
+        <div class="cmd-right">
+          <div class="widget">
+            <div class="widget-h">News countdown</div>
+            <div id="newsCountdown"></div>
+          </div>
+          <div class="widget">
+            <div class="widget-h">LinkedIn posts this cycle</div>
+            <div class="widget-sub" id="liEditionLabel"></div>
+            <div id="liChecklist"></div>
+          </div>
+        </div>
       </div>
-      <div id="catList"></div>
 
       <div class="cal-mini-wrap open">
         <div class="cal-mini-head" onclick="toggleHomeCal()">
@@ -272,6 +321,10 @@
       <span class="fl" id="calLabel" style="font-size:14px;color:var(--ink);font-weight:700;letter-spacing:-.01em"></span>
       <button class="btn sm ghost" onclick="calMove(1)">Next ›</button>
       <button class="btn sm ghost" onclick="calToday()">Today</button>
+      <div class="calmode">
+        <button class="btn sm ghost active" id="calModeMonth" onclick="calSetMode('month')">Month</button>
+        <button class="btn sm ghost" id="calModeWeek" onclick="calSetMode('week')">Week</button>
+      </div>
       <div class="spacer"></div>
       <div class="meta">Orange = publication · Outline = copy due · Bar = task</div>
     </div>
@@ -307,14 +360,14 @@
 
   <!-- GUIDE -->
   <div class="tabpane" id="tab-guide">
-    <div class="sec-head"><div><h2>How it works</h2></div></div>
+    <div class="sec-head"><div><h2>How it works</h2></div><button class="btn sm ghost" onclick="document.querySelector('#nav button[data-tab=&quot;command&quot;]').click()">← Back to dashboard</button></div>
     <div id="guideBody"></div>
   </div>
 
   <footer>
     <div><b>The Alternative Investor — Production Dashboard.</b> Self-contained. Data saves in this browser only; use Back up regularly.</div>
     <div style="margin-top:4px">Daily loop: pick the focus edition → review what matters → ask Claude to prioritise → act → draft from the library.</div>
-    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm ghost" onclick="exportData()">Back up</button><button class="btn sm ghost" onclick="importData()">Restore</button><button class="btn sm ghost" onclick="wipeData()">Clear all data</button><button class="btn sm ghost" onclick="configureProxy()">Connect Claude</button></div>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm ghost" onclick="openTab('guide')">How it works</button><button class="btn sm ghost" onclick="exportData()">Back up</button><button class="btn sm ghost" onclick="importData()">Restore</button><button class="btn sm ghost" onclick="wipeData()">Clear all data</button><button class="btn sm ghost" onclick="configureProxy()">Connect Claude</button></div>
   </footer>
 </div>
 
@@ -368,27 +421,46 @@ const MASTER_TASKS = [
   {timing:'T-30', task:'Structure new InDesign edition', cat:'Production', llm:false, offset:30},
   {timing:'T-30', task:'Amend date and issue number', cat:'Production', llm:false, offset:30},
   {timing:'T-30', task:'Change front cover', cat:'Design', llm:true, offset:30},
+  {timing:'T-30', task:'Add stats to page 2', cat:'Production', llm:true, offset:30},
   {timing:'T-30', task:'Update events on page 2', cat:'Production', llm:true, offset:30},
   {timing:'T-21', task:'Check regular sections are on track', cat:'Contributors', llm:true, offset:21},
   {timing:'T-14', task:'Check contributor risk', cat:'Contributors', llm:true, offset:14},
+  {timing:'T-12', task:'Post LinkedIn "coming soon" note for this edition', cat:'LinkedIn', llm:true, offset:12},
   {timing:'T-10', task:'Send hard chasers', cat:'Contributors', llm:true, offset:10},
   {timing:'T-8', task:'Start drafting news section', cat:'Editorial', llm:true, offset:8},
   {timing:'T-7', task:'Contributor copy due', cat:'Contributors', llm:true, offset:7},
+  {timing:'T-5', task:'Run news copy through Claude: check order, last-30-days, suggest headlines', cat:'Editorial', llm:true, offset:5},
   {timing:'T-4', task:'Finalise news writing', cat:'Editorial', llm:true, offset:4},
+  {timing:'T-3', task:'Check latest HFR data (hfr.com/family-indices/hfri)', cat:'Editorial', llm:false, offset:3},
+  {timing:'T-3', task:'Final proof — full publication sanity check', cat:'Production', llm:false, offset:3},
   {timing:'T-3', task:'Finalise publication', cat:'Production', llm:false, offset:3},
-  {timing:'T-2', task:'Prepare Mailchimp and release', cat:'Mailchimp', llm:true, offset:2},
+  {timing:'T-2', task:'Prepare Mailchimp and release (sharpen the opening hook)', cat:'Mailchimp', llm:true, offset:2},
   {timing:'T-day', task:'Publish and email contributors', cat:'Launch', llm:true, offset:0},
   {timing:'T+1', task:'Prepare LinkedIn post', cat:'LinkedIn', llm:true, offset:-1},
+  {timing:'T+4', task:'Tidy Mailchimp list — remove unsubscribes and bounces', cat:'Mailchimp', llm:false, offset:-4},
 ];
 const CATS = ['Editorial','Contributors','Production','Design','Mailchimp','LinkedIn','Launch'];
 
 const uid = () => Math.random().toString(36).slice(2,10);
 function dateMinus(pubISO, days){ const d=new Date(pubISO+'T00:00:00'); d.setDate(d.getDate()-days); return d.toISOString().slice(0,10); }
-function fmt(iso){ if(!iso) return '—'; const d=new Date(iso+'T00:00:00');
+/* A valid stored date must be YYYY-MM-DD with a sensible 4-digit year.
+   This rejects half-typed values like 0002 that some browsers emit
+   while the year field is incomplete, which otherwise poison the maths. */
+function validDate(iso){
+  if(!iso || typeof iso!=='string') return false;
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if(!m) return false;
+  const y=+m[1], mo=+m[2], d=+m[3];
+  if(y<2000 || y>2100) return false;          // outside this, it's a typo not a date
+  if(mo<1 || mo>12 || d<1 || d>31) return false;
+  const dt=new Date(iso+'T00:00:00');
+  return !isNaN(dt.getTime()) && dt.getFullYear()===y;
+}
+function fmt(iso){ if(!validDate(iso)) return '—'; const d=new Date(iso+'T00:00:00');
   return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
-function fmtShort(iso){ if(!iso) return '—'; const d=new Date(iso+'T00:00:00');
+function fmtShort(iso){ if(!validDate(iso)) return '—'; const d=new Date(iso+'T00:00:00');
   return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
-function daysUntil(iso){ if(!iso) return null; const d=new Date(iso+'T00:00:00'); return Math.round((d-today)/86400000); }
+function daysUntil(iso){ if(!validDate(iso)) return null; const d=new Date(iso+'T00:00:00'); return Math.round((d-today)/86400000); }
 
 /* Edition: name, synopsis, focus, pub date, copy date (editable), derived tasks, contributors */
 function makeEdition(name, pubISO, seed){
@@ -437,6 +509,13 @@ function migrate(data){
       if(!Array.isArray(e.contributors)) e.contributors=[];
     });
   }
+  // Always: clear any malformed dates that slipped in before validation
+  // existed (e.g. a half-typed year like 0002). Better blank than poison.
+  (data.editions||[]).forEach(e=>{
+    if(e.pub && !validDate(e.pub)) e.pub='';
+    if(e.copy && !validDate(e.copy)) e.copy='';
+    (e.tasks||[]).forEach(t=>{ if(t.deadline && !validDate(t.deadline)) t.deadline=''; });
+  });
   data.schema = SCHEMA;
   return data;
 }
@@ -506,6 +585,15 @@ document.getElementById('nav').addEventListener('click', e=>{
   document.getElementById('tab-'+b.dataset.tab).classList.add('active');
   if(b.dataset.tab==='calendar') renderCalendar();
 });
+/* Open a tab that has no nav button (e.g. the guide, now in the footer). */
+function openTab(name){
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabpane').forEach(p=>p.classList.remove('active'));
+  const pane=document.getElementById('tab-'+name);
+  if(pane) pane.classList.add('active');
+  if(name==='calendar') renderCalendar();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 
 const RISK_RANK = {Red:0, Amber:1, Green:2};
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -525,6 +613,61 @@ function focusEdition(){
 /* ============================================================
    COMMAND CENTRE — focus edition, categories, then upcoming
    ============================================================ */
+/* News countdown: dormant until 30 days before publication, then
+   counts down to publication day. */
+function renderNewsCountdown(ed){
+  const box=document.getElementById('newsCountdown'); if(!box) return;
+  if(!ed || !validDate(ed.pub)){
+    box.innerHTML=`<div class="nc-num idle">No date</div>
+      <div class="nc-meta">Set this edition's publication date to start the countdown.</div>`;
+    return;
+  }
+  const d=daysUntil(ed.pub);
+  if(d>30){
+    box.innerHTML=`<div class="nc-num idle">T‑${d}</div>
+      <div class="nc-meta">News countdown begins 30 days out (in ${d-30} day${d-30===1?'':'s'}).</div>`;
+    return;
+  }
+  if(d<0){
+    box.innerHTML=`<div class="nc-num idle">Published</div>
+      <div class="nc-meta">${ed.name||'This edition'} went out ${Math.abs(d)} day${Math.abs(d)===1?'':'s'} ago.</div>`;
+    return;
+  }
+  // within the 30-day window
+  const pct=Math.max(0,Math.min(100, Math.round((30-d)/30*100)));
+  const warn = d<=5;
+  box.innerHTML=`
+    <div class="nc-num ${warn?'warn':''}">${d===0?'Today':d}</div>
+    <div class="nc-unit">${d===0?'publication day':'day'+(d===1?'':'s')+' to publication'}</div>
+    <div class="nc-bar"><i style="width:${pct}%"></i></div>
+    <div class="nc-meta">News drafting starts T‑8, finalises T‑4. ${warn?'<b style="color:var(--red)">Final stretch.</b>':''}</div>`;
+}
+
+/* LinkedIn checklist: five boxes stored per-edition, so switching the
+   focus edition naturally shows that edition's own progress and a new
+   edition starts fresh. */
+const LI_SLOTS=['Coming-soon teaser (~T-12)','Mid-cycle build post','Contributor spotlight','Launch-day post','Follow-up / engagement post'];
+function renderLinkedInChecklist(ed){
+  const box=document.getElementById('liChecklist'); if(!box) return;
+  const lbl=document.getElementById('liEditionLabel');
+  if(!ed){ box.innerHTML=''; if(lbl) lbl.textContent=''; return; }
+  if(lbl) lbl.textContent=(ed.name||'This edition');
+  if(!Array.isArray(ed.liPosts)) ed.liPosts=[false,false,false,false,false];
+  const done=ed.liPosts.filter(Boolean).length;
+  box.innerHTML=LI_SLOTS.map((s,i)=>`
+    <div class="li-row ${ed.liPosts[i]?'done':''}" onclick="toggleLi('${ed.id}',${i})">
+      <div class="li-box">${ed.liPosts[i]?'✓':''}</div>
+      <div class="li-label">${esc(s)}</div>
+    </div>`).join('')
+    +`<div class="li-count">${done} of 5 done this cycle</div>`;
+}
+function toggleLi(edId,i){
+  const ed=DB.editions.find(e=>e.id===edId); if(!ed) return;
+  if(!Array.isArray(ed.liPosts)) ed.liPosts=[false,false,false,false,false];
+  ed.liPosts[i]=!ed.liPosts[i];
+  save(); renderLinkedInChecklist(ed);
+}
+
 function renderCommand(){
   const emptyBox=document.getElementById('cmdEmpty');
   const mainBox=document.getElementById('cmdMain');
@@ -562,6 +705,9 @@ function renderCommand(){
     <div class="sum red"><span class="n">${red}</span><span class="l">Red</span></div>
     <div class="sum amber"><span class="n">${week}</span><span class="l">Due in 7 days</span></div>
     <div class="sum"><span class="n">${open.length}</span><span class="l">Open tasks</span></div>`;
+
+  renderNewsCountdown(focus);
+  renderLinkedInChecklist(focus);
 
   // categories with open tasks, ordered by worst risk inside
   const catBox=document.getElementById('catList');
@@ -672,10 +818,12 @@ function renderEditions(){
         onchange="setEdField('${e.id}','synopsis',this.value)"></td>
       <td style="min-width:200px"><input class="cin" value="${esc(e.focus)}" placeholder="editorial synopsis"
         onchange="setEdField('${e.id}','focus',this.value)"></td>
-      <td><input type="date" class="cin" value="${esc(e.pub)}"
+      <td><input type="date" class="cin" min="2000-01-01" max="2100-12-31"
+        value="${validDate(e.pub)?esc(e.pub):''}"
         onchange="setEdField('${e.id}','pub',this.value)">
-        <div class="sub">${dl!=null?(dl>=0?dl+' days out':Math.abs(dl)+' days ago'):'set date'}</div></td>
-      <td><input type="date" class="cin" value="${esc(e.copy)}"
+        <div class="sub">${validDate(e.pub)?(dl>=0?dl+' days out':Math.abs(dl)+' days ago'):'pick a date'}</div></td>
+      <td><input type="date" class="cin" min="2000-01-01" max="2100-12-31"
+        value="${validDate(e.copy)?esc(e.copy):''}"
         onchange="setEdField('${e.id}','copy',this.value)">
         <div class="sub">copy due</div></td>
       <td><button class="delx" title="Delete edition" onclick="delEdition('${e.id}')">×</button></td>
@@ -699,19 +847,33 @@ function addEditionRow(){
 function setEdField(id,f,v){
   const ed=DB.editions.find(e=>e.id===id); if(!ed) return;
   if(f==='pub'){
+    if(v && !validDate(v)){
+      toast('That date looks incomplete — use the calendar picker or type a full year');
+      renderEditions();   // revert the field to the last good value
+      return;
+    }
     ed.pub=v;
     if(v){
-      // (re)build tasks if none, else rebase every deadline off the new pub date
-      if(!ed.tasks.length) ed.tasks=MASTER_TASKS.map(m=>({id:uid(),task:m.task,cat:m.cat,timing:m.timing,deadline:dateMinus(v,m.offset),status:'Not started',risk:'Green',llm:m.llm,notes:''}));
-      else rebaseTasks(ed);
+      const anyValidDeadline = ed.tasks.some(t=>validDate(t.deadline));
+      if(!ed.tasks.length || !anyValidDeadline){
+        // no tasks, or tasks were left dateless by sanitisation — rebuild fresh
+        ed.tasks=MASTER_TASKS.map(m=>({id:uid(),task:m.task,cat:m.cat,timing:m.timing,deadline:dateMinus(v,m.offset),status:'Not started',risk:'Green',llm:m.llm,notes:''}));
+      } else {
+        rebaseTasks(ed);
+      }
     }
   } else if(f==='copy'){
+    if(v && !validDate(v)){
+      toast('That date looks incomplete — use the calendar picker or type a full year');
+      renderEditions();
+      return;
+    }
     ed.copy=v;
   } else {
     ed[f]=v;
   }
   save(); renderAll();
-  if(f==='pub') toast('Dates recalculated from publication date');
+  if(f==='pub' && v) toast('Dates recalculated from publication date');
 }
 function delEdition(id){
   const ed=DB.editions.find(e=>e.id===id);
@@ -791,8 +953,41 @@ function delContributor(edId,cId){
    CALENDAR
    ============================================================ */
 let calCursor=new Date(today.getFullYear(),today.getMonth(),1);
-function calMove(d){ calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+d,1); renderCalendar(); }
-function calToday(){ calCursor=new Date(today.getFullYear(),today.getMonth(),1); renderCalendar(); }
+let calMode='month';   // 'month' | 'week'
+let calWeekAnchor=mondayOf(today);   // a Date that is the Monday of the shown week
+
+function mondayOf(d){
+  const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  const off=(x.getDay()+6)%7;        // 0=Mon
+  x.setDate(x.getDate()-off);
+  return x;
+}
+function calMove(dir){
+  if(calMode==='week'){
+    calWeekAnchor=new Date(calWeekAnchor.getFullYear(),calWeekAnchor.getMonth(),calWeekAnchor.getDate()+dir*7);
+  } else {
+    calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+dir,1);
+  }
+  renderCalendar();
+}
+function calToday(){
+  calCursor=new Date(today.getFullYear(),today.getMonth(),1);
+  calWeekAnchor=mondayOf(today);
+  renderCalendar();
+}
+function calSetMode(m){
+  calMode=m;
+  // entering week mode: anchor to the week containing the month cursor's
+  // "today" if today is in that month, else the 1st of the cursor month
+  if(m==='week'){
+    const inCursorMonth = today.getFullYear()===calCursor.getFullYear() && today.getMonth()===calCursor.getMonth();
+    calWeekAnchor = mondayOf(inCursorMonth ? today : new Date(calCursor.getFullYear(),calCursor.getMonth(),1));
+  } else {
+    // entering month mode: jump month grid to the week's month
+    calCursor=new Date(calWeekAnchor.getFullYear(),calWeekAnchor.getMonth(),1);
+  }
+  renderCalendar();
+}
 function calEvents(){
   const ev={};
   const push=(iso,o)=>{ if(!iso) return; (ev[iso]=ev[iso]||[]).push(o); };
@@ -803,46 +998,82 @@ function calEvents(){
   });
   return ev;
 }
-function renderCalendar(){
-  const y=calCursor.getFullYear(),m=calCursor.getMonth();
+/* One cell, shared by month and week so they look identical.
+   maxItems/height differ a little: week cells are taller and show more. */
+function calCell(c, ev, tISO, opts){
+  opts=opts||{};
+  const dt=new Date(c.yr,c.mo,c.d); const iso=dt.toISOString().slice(0,10);
+  const items=(ev[iso]||[]).slice().sort((a,b)=>(a.kind==='pub'?-1:b.kind==='pub'?1:0)||((RISK_RANK[a.risk]??3)-(RISK_RANK[b.risk]??3)));
+  const cap=opts.maxItems||3;
+  const shown=items.slice(0,cap); const extra=items.length-shown.length;
+  const evh=shown.map((it,idx)=>{
+    let bg='var(--panel-3)',col='var(--ink)',bl='var(--ink-faint)';
+    if(it.kind==='pub'){ bg='var(--orange)'; col='#fff'; bl='var(--orange)'; }
+    else if(it.kind==='copy'){ bg='transparent'; bl='var(--orange)'; }
+    else if(it.risk==='Red') bl='var(--red)';
+    else if(it.risk==='Amber') bl='var(--amber)';
+    else bl='var(--green)';
+    const wrap = opts.wrap ? 'white-space:normal;' : 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    return `<div onclick="calClick('${iso}',${idx})" title="${esc((it.sub?it.sub+' — ':'')+it.label)}"
+      style="font-size:${opts.fs||10}px;line-height:1.3;padding:2px 5px;border-radius:4px;cursor:pointer;background:${bg};color:${col};border:1px solid ${it.kind==='copy'?bl:'transparent'};border-left:3px solid ${bl};${wrap}font-weight:${it.kind==='pub'?700:500}">${esc(it.label)}</div>`;
+  }).join('');
+  const isT=iso===tISO;
+  return `<td style="vertical-align:top;height:${opts.h||96}px;padding:6px 7px;${c.dim?'opacity:.4;':''}${isT?'background:var(--orange-dim);':''}">
+    <div style="font-size:11px;font-weight:700;text-align:right;color:${isT?'var(--orange)':'var(--ink-soft)'};margin-bottom:3px">${opts.fullDate?dt.toLocaleDateString('en-GB',{day:'numeric',month:'short'}):c.d}</div>
+    <div style="display:flex;flex-direction:column;gap:3px">${evh}${extra>0?`<div style="font-size:9px;color:var(--ink-faint);font-family:'Archivo',sans-serif;font-weight:600">+${extra} more</div>`:''}</div>
+  </td>`;
+}
+function monthGridHtml(cursor, ev, tISO, cellOpts){
+  const y=cursor.getFullYear(),m=cursor.getMonth();
   const first=new Date(y,m,1); const lead=(first.getDay()+6)%7;
   const dim=new Date(y,m+1,0).getDate(); const prev=new Date(y,m,0).getDate();
-  const ev=calEvents(); const tISO=today.toISOString().slice(0,10);
   let cells=[];
   for(let i=lead-1;i>=0;i--) cells.push({d:prev-i,dim:true,mo:m-1,yr:y});
   for(let d=1;d<=dim;d++) cells.push({d,dim:false,mo:m,yr:y});
   while(cells.length<42) cells.push({d:cells.length-(lead+dim)+1,dim:true,mo:m+1,yr:y});
   cells=cells.slice(0,42);
-  const cellHtml=cells.map(c=>{
-    const dt=new Date(c.yr,c.mo,c.d); const iso=dt.toISOString().slice(0,10);
-    const items=(ev[iso]||[]).slice().sort((a,b)=>(a.kind==='pub'?-1:b.kind==='pub'?1:0)||((RISK_RANK[a.risk]??3)-(RISK_RANK[b.risk]??3)));
-    const shown=items.slice(0,3); const extra=items.length-shown.length;
-    const evh=shown.map((it,idx)=>{
-      let bg='var(--panel-3)',col='var(--ink)',bl='var(--ink-faint)';
-      if(it.kind==='pub'){ bg='var(--orange)'; col='#fff'; bl='var(--orange)'; }
-      else if(it.kind==='copy'){ bg='transparent'; bl='var(--orange)'; }
-      else if(it.risk==='Red') bl='var(--red)';
-      else if(it.risk==='Amber') bl='var(--amber)';
-      else bl='var(--green)';
-      return `<div onclick="calClick('${iso}',${idx})" title="${esc((it.sub?it.sub+' — ':'')+it.label)}"
-        style="font-size:10px;line-height:1.25;padding:2px 5px;border-radius:4px;cursor:pointer;background:${bg};color:${col};border:1px solid ${it.kind==='copy'?bl:'transparent'};border-left:3px solid ${bl};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:${it.kind==='pub'?700:500}">${esc(it.label)}</div>`;
-    }).join('');
-    const isT=iso===tISO;
-    return `<td style="vertical-align:top;height:96px;padding:6px 7px;${c.dim?'opacity:.4;':''}${isT?'background:var(--orange-dim);':''}">
-      <div style="font-size:11px;font-weight:700;text-align:right;color:${isT?'var(--orange)':'var(--ink-soft)'};margin-bottom:3px">${c.d}</div>
-      <div style="display:flex;flex-direction:column;gap:3px">${evh}${extra>0?`<div style="font-size:9px;color:var(--ink-faint);font-family:'Archivo',sans-serif;font-weight:600">+${extra} more</div>`:''}</div>
-    </td>`;
-  });
   let body='';
-  for(let r=0;r<6;r++) body+='<tr>'+cellHtml.slice(r*7,r*7+7).join('')+'</tr>';
-  const tableHtml=`<table>
+  for(let r=0;r<6;r++) body+='<tr>'+cells.slice(r*7,r*7+7).map(c=>calCell(c,ev,tISO,cellOpts)).join('')+'</tr>';
+  return `<table>
     <thead><tr>${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<th style="text-align:center">${d}</th>`).join('')}</tr></thead>
     <tbody>${body}</tbody></table>`;
-  const full=document.getElementById('calWrap'); if(full) full.innerHTML=tableHtml;
-  const home=document.getElementById('calWrapHome'); if(home) home.innerHTML=tableHtml;
-  const lbl=calCursor.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
-  const lf=document.getElementById('calLabel'); if(lf) lf.textContent=lbl;
-  const lh=document.getElementById('calLabelHome'); if(lh) lh.textContent=lbl;
+}
+function renderCalendar(){
+  const ev=calEvents(); const tISO=today.toISOString().slice(0,10);
+
+  // The full calendar tab honours the Month/Week toggle.
+  let fullHtml, fullLabel;
+  if(calMode==='week'){
+    const days=[];
+    for(let i=0;i<7;i++){ const d=new Date(calWeekAnchor.getFullYear(),calWeekAnchor.getMonth(),calWeekAnchor.getDate()+i);
+      days.push({d:d.getDate(),mo:d.getMonth(),yr:d.getFullYear(),dim:false}); }
+    const dayNames=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const head=days.map((c,i)=>`<th style="text-align:center">${dayNames[i]}</th>`).join('');
+    const row=days.map(c=>calCell(c,ev,tISO,{h:200,maxItems:12,fs:11,wrap:true})).join('');
+    fullHtml=`<table><thead><tr>${head}</tr></thead><tbody><tr>${row}</tr></tbody></table>`;
+    const wkEnd=new Date(calWeekAnchor.getFullYear(),calWeekAnchor.getMonth(),calWeekAnchor.getDate()+6);
+    fullLabel=`${calWeekAnchor.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${wkEnd.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`;
+  } else {
+    fullHtml=monthGridHtml(calCursor,ev,tISO,{});
+    fullLabel=calCursor.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  }
+  const full=document.getElementById('calWrap'); if(full) full.innerHTML=fullHtml;
+  const lf=document.getElementById('calLabel'); if(lf) lf.textContent=fullLabel;
+
+  // The home mini-calendar is ALWAYS a month grid (at-a-glance), independent of the toggle.
+  const home=document.getElementById('calWrapHome');
+  if(home){
+    home.innerHTML=monthGridHtml(calCursor,ev,tISO,{});
+    const lh=document.getElementById('calLabelHome');
+    if(lh) lh.textContent=calCursor.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  }
+
+  // reflect active mode on the toggle buttons if present
+  const mb=document.getElementById('calModeMonth'), wb=document.getElementById('calModeWeek');
+  if(mb&&wb){
+    mb.classList.toggle('active',calMode==='month');
+    wb.classList.toggle('active',calMode==='week');
+  }
   renderCalendar._ev=ev;
 }
 function calClick(iso,idx){
@@ -1070,8 +1301,48 @@ Synopsis: ${ed.synopsis||'[synopsis]'}
 
 I will paste raw items (fundraises, manager moves, regulatory notes). For each, write a tight 60–90 word newsletter paragraph in house style: factual, specific with numbers, no hype, UK English, third person, with a short bold headline line. Ask me for the items now.`;
     intro='News-drafting workflow with this edition\u2019s synopsis loaded.';
+  } else if(t.task && t.task.indexOf('Run news copy through Claude')===0){
+    title='News running order & headline check';
+    body=`Review the news section for *The Alternative Investor*, ${ed.name} (publishes ${fmt(ed.pub)}).
+
+I will paste the full news copy. Do four things:
+1. Sanity-check that every item is genuinely recent — flag anything that does not clearly relate to the last ~30 days before ${fmt(ed.pub)}, or that reads as stale.
+2. Recommend the running order (most significant / most relevant to the edition theme first). Explain each placement in one line.
+3. Suggest a tighter headline for each item if the current one can be improved.
+4. Flag any obvious gap — a major story from the period that a reader would expect and seems to be missing.
+
+Edition theme for context: ${ed.synopsis||'[synopsis]'}
+UK English, decisive, no padding. Ask me to paste the copy now.`;
+    intro='Paste the drafted news copy; Claude checks recency, order and headlines.';
+  } else if(t.task && t.task.indexOf('Post LinkedIn "coming soon"')===0){
+    title='LinkedIn "coming soon" teaser';
+    body=`Draft a short LinkedIn post teasing the upcoming edition of *The Alternative Investor*, publishing ${fmt(ed.pub)} (about 12 days away).
+
+Edition focus: ${ed.synopsis||'[edition focus]'}
+Editorial synopsis: ${ed.focus||'[synopsis]'}
+Contributors so far:
+${lineup}
+
+This is a "coming soon", not the launch post. Build anticipation without giving everything away: a strong first line (no "delighted to announce"), a sense of the theme and the calibre of contributors, and a soft "out in ~2 weeks" close. Concise, professional, UK English. Give two first-line options.`;
+    intro='Pre-launch teaser, ~12 days out, built from this edition.';
   } else if(t.cat==='Mailchimp'){ title='Mailchimp copy';
-    body=PROMPTS.mailchimp.build({ed:ed.name,syn:ed.synopsis,lineup}); intro='Auto-filled from this edition.';
+    body=`Draft the Mailchimp email for *The Alternative Investor*, ${ed.name} (publishes ${fmt(ed.pub)}).
+
+Edition focus: ${ed.synopsis||'[edition focus]'}
+Editorial synopsis: ${ed.focus||'[synopsis]'}
+Contributors:
+${lineup}
+Publication link: [link] | Subscription link: [link]
+
+The opening must earn the open. Lead with an unexpected, intriguing hook that connects the edition's theme to something the reader would not expect — in the spirit of these patterns (do NOT reuse them literally, generate fresh ones grounded in THIS edition's actual content):
+- connect two unrelated world events ("Why a drought in Taiwan is driving the next wave of private equity")
+- a hidden pattern in plain sight ("Look at the luxury watch market and you'll see where inflation is heading")
+- a historical parallel ("The last time capital behaved like this, the year was 1971")
+- a counter-intuitive observation
+- a question about an overlooked detail
+
+Then: a short overview, bulleted feature summaries, a collaboration line, and a clear call to read. Give 3 alternative subject lines and matching preview text, then the body. UK English, polished, not hype-y.`;
+    intro='Mailchimp copy with a sharpened, curiosity-driven opening hook.';
   } else if(t.cat==='LinkedIn'){ title='LinkedIn post';
     body=PROMPTS.linkedin.build({ed:ed.name,syn:ed.synopsis,lineup}); intro='Auto-filled from this edition.';
   } else if(t.task==='Create synopsis and edition knowledge brief'){ title='Synopsis & focus';
