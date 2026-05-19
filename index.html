@@ -47,11 +47,15 @@
   .sw::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:var(--orange);transition:.2s}
   [data-theme="dark"] .sw::after{transform:translateX(19px)}
 
-  nav{display:flex;gap:4px;flex-wrap:wrap;padding:14px 0 0;margin-bottom:24px}
-  nav button{appearance:none;border:1px solid transparent;background:transparent;cursor:pointer;font-family:'Archivo',sans-serif;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);padding:9px 15px;border-radius:8px;transition:.16s}
+  nav{display:flex;gap:4px;flex-wrap:wrap;align-items:center;padding:14px 0 0;margin-bottom:24px}
+  nav .nav-spacer{flex:1 1 auto}
+  nav button{appearance:none;border:1px solid transparent;background:transparent;cursor:pointer;font-family:'Archivo',sans-serif;font-size:13px;letter-spacing:.01em;color:var(--ink-faint);padding:9px 15px;border-radius:8px;transition:.16s}
   nav button:hover{color:var(--ink);background:var(--panel)}
   nav button.active{color:#fff;background:var(--orange);font-weight:600}
   [data-theme="light"] nav button.active{color:#fff}
+  nav button.call-claude{border:1px solid var(--orange);color:var(--orange);background:transparent;font-weight:700;border-radius:10px;padding:9px 20px}
+  nav button.call-claude:hover{background:var(--orange-dim);color:var(--orange)}
+  nav button.call-claude.active{background:var(--orange);color:#fff;border-color:var(--orange)}
   nav button .pip{display:inline-block;min-width:17px;padding:1px 5px;margin-left:8px;background:var(--red);color:#fff;border-radius:9px;font-size:10px;text-align:center;vertical-align:middle;font-weight:600}
 
   .sec-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin:0 0 18px;flex-wrap:wrap}
@@ -86,6 +90,13 @@
   .cat.open .chev{transform:rotate(90deg)}
   .cat-b{display:none;border-top:1px solid var(--line)}
   .cat.open .cat-b{display:block}
+  .urg-band{margin-bottom:16px}
+  .urg-band:last-child{margin-bottom:0}
+  .urg-h{display:flex;align-items:center;gap:10px;margin:0 0 7px 2px}
+  .urg-h .urg-name{font-family:'Archivo',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+  .urg-h .badge{font-family:'Archivo',sans-serif;font-size:10px;padding:3px 8px;border-radius:20px;background:var(--panel-3);color:var(--ink-soft)}
+  .urg-h .badge.red{background:rgba(207,63,48,.14);color:var(--red);font-weight:600}
+  .urg-h .badge.amber{background:rgba(196,136,31,.16);color:var(--amber)}
 
   .row{display:grid;grid-template-columns:74px 1fr auto;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);border-left:3px solid transparent}
   .row:last-child{border-bottom:0}
@@ -114,12 +125,14 @@
   .nc-bar{height:6px;border-radius:6px;background:var(--panel-3);margin-top:14px;overflow:hidden}
   .nc-bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--orange),var(--orange-bright));transition:width .5s}
   .nc-meta{font-size:11px;color:var(--ink-faint);margin-top:9px}
-  .li-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+  .li-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);user-select:none}
   .li-row:last-child{border-bottom:0}
-  .li-box{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--line-2);flex:none;display:flex;align-items:center;justify-content:center;transition:.14s}
+  .li-box{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--line-2);flex:none;display:flex;align-items:center;justify-content:center;transition:.14s;cursor:pointer}
   .li-row.done .li-box{background:var(--orange);border-color:var(--orange);color:#fff}
   .li-row.done .li-label{color:var(--ink-faint);text-decoration:line-through}
-  .li-label{font-size:12.5px;color:var(--ink)}
+  .li-label{font-size:12.5px;color:var(--ink);flex:1;cursor:pointer}
+  .li-ai{appearance:none;border:1px solid var(--line-2);background:transparent;color:var(--ink-soft);font-family:'Archivo',sans-serif;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:5px;cursor:pointer;flex:none;transition:.14s}
+  .li-ai:hover{border-color:var(--orange);color:var(--orange);background:var(--orange-dim)}
   .li-count{font-size:11px;color:var(--ink-faint);margin-top:10px;text-align:right}
   @media(max-width:900px){ .cmd-split{grid-template-columns:1fr} .cmd-right{flex-direction:row;flex-wrap:wrap} .cmd-right .widget{flex:1;min-width:240px} }
   .cal-mini-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin:18px 0 4px;box-shadow:var(--shadow);overflow:hidden}
@@ -245,11 +258,12 @@
   </header>
 
   <nav id="nav">
-    <button data-tab="command" class="active">Command Centre</button>
+    <button data-tab="command" class="active">AI Dashboard</button>
     <button data-tab="calendar">Calendar</button>
     <button data-tab="editions">Editions</button>
     <button data-tab="contributors">Contributors</button>
-    <button data-tab="prompts">Claude Prompts</button>
+    <span class="nav-spacer"></span>
+    <button data-tab="prompts" class="call-claude">Call Claude</button>
   </nav>
 
   <!-- COMMAND CENTRE -->
@@ -267,8 +281,18 @@
         <div class="cmd-left">
           <div class="sumline" id="sumLine"></div>
           <div class="sec-head" style="margin-bottom:12px">
-            <div><h2>What matters for this edition</h2><div class="sub">Open tasks, grouped by category, worst risk first. Click a category to expand.</div></div>
-            <button class="btn" onclick="buildFocusBrief()">Ask Claude to prioritise</button>
+            <div>
+              <h2>What matters for this edition</h2>
+              <div class="sub" id="cmdViewSub">Open tasks, grouped by category, worst risk first. Click a category to expand.</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <div class="calmode">
+                <button class="btn sm ghost active" id="cmdViewCat" onclick="setCmdView('category')">Category</button>
+                <button class="btn sm ghost" id="cmdViewUrg" onclick="setCmdView('urgency')">Urgency</button>
+              </div>
+              <button class="btn ghost" onclick="exportPDF()">Save as PDF</button>
+              <button class="btn" onclick="buildFocusBrief()">Ask Claude to prioritise</button>
+            </div>
           </div>
           <div id="catList"></div>
         </div>
@@ -326,8 +350,9 @@
         <button class="btn sm ghost" id="calModeWeek" onclick="calSetMode('week')">Week</button>
       </div>
       <div class="spacer"></div>
-      <div class="meta">Orange = publication · Outline = copy due · Bar = task</div>
+      <div class="meta">Left bar = edition · right edge = risk · solid orange = publication</div>
     </div>
+    <div id="calLegend" style="display:flex;gap:14px;flex-wrap:wrap;margin:-4px 0 12px;font-size:11px;color:var(--ink-soft)"></div>
     <div class="tbl-wrap" id="calWrap"></div>
   </div>
 
@@ -655,9 +680,10 @@ function renderLinkedInChecklist(ed){
   if(!Array.isArray(ed.liPosts)) ed.liPosts=[false,false,false,false,false];
   const done=ed.liPosts.filter(Boolean).length;
   box.innerHTML=LI_SLOTS.map((s,i)=>`
-    <div class="li-row ${ed.liPosts[i]?'done':''}" onclick="toggleLi('${ed.id}',${i})">
-      <div class="li-box">${ed.liPosts[i]?'✓':''}</div>
-      <div class="li-label">${esc(s)}</div>
+    <div class="li-row ${ed.liPosts[i]?'done':''}">
+      <div class="li-box" onclick="toggleLi('${ed.id}',${i})">${ed.liPosts[i]?'✓':''}</div>
+      <div class="li-label" onclick="toggleLi('${ed.id}',${i})">${esc(s)}</div>
+      <button class="li-ai" title="Ask Claude to draft this post" onclick="event.stopPropagation();liPrompt('${ed.id}',${i})">Claude</button>
     </div>`).join('')
     +`<div class="li-count">${done} of 5 done this cycle</div>`;
 }
@@ -666,6 +692,63 @@ function toggleLi(edId,i){
   if(!Array.isArray(ed.liPosts)) ed.liPosts=[false,false,false,false,false];
   ed.liPosts[i]=!ed.liPosts[i];
   save(); renderLinkedInChecklist(ed);
+}
+/* Tailored Claude prompt per LinkedIn post type, pre-filled from the edition. */
+function liPrompt(edId,i){
+  const ed=DB.editions.find(e=>e.id===edId); if(!ed) return;
+  const lineup=ed.contributors.map(c=>`${c.org||'?'} / ${c.name||'?'} — ${c.focus||''} (${c.status})`).join('\n')||'[none yet]';
+  const dl = validDate(ed.pub) ? daysUntil(ed.pub) : null;
+  const when = dl===null ? 'no publication date set yet'
+    : dl>0 ? `publishes in ${dl} day${dl===1?'':'s'} (${fmt(ed.pub)})`
+    : dl===0 ? `publishes today` : `published ${Math.abs(dl)} day${Math.abs(dl)===1?'':'s'} ago`;
+  const base=`Edition: ${ed.name||'[edition]'} — ${when}
+Edition focus: ${ed.synopsis||'[edition focus]'}
+Editorial synopsis: ${ed.focus||'[synopsis]'}
+Contributors:
+${lineup}
+Publication link: [paste link] | Subscription link: [paste link]`;
+  const briefs=[
+    {t:'LinkedIn — coming-soon teaser',
+     g:`Write a short LinkedIn "coming soon" teaser for this edition (~12 days out). Build anticipation without giving everything away: a strong first line (no "delighted to announce"), a feel for the theme and the calibre of contributors, a soft "out in ~2 weeks" close. Give two first-line options. Concise, professional, UK English.`},
+    {t:'LinkedIn — mid-cycle build post',
+     g:`Write a LinkedIn post that builds interest mid-cycle (roughly a week before publication). Lead with one genuinely interesting idea or tension from the edition's theme — make the reader curious about the analysis — then note the edition is coming and who is contributing. No hard sell. Two first-line options. UK English.`},
+    {t:'LinkedIn — contributor spotlight',
+     g:`Write a LinkedIn post spotlighting the contributors to this edition. Make it about the people and the value of their expertise, not just a list — pick out a couple by name/organisation and the angle they bring, frame why this line-up is worth reading. Warm but professional. Two first-line options. UK English.`},
+    {t:'LinkedIn — launch-day post',
+     g:`Write the LinkedIn launch post for the day this edition goes out. Strong opening line (no "delighted/pleased to announce"), one clear reason it matters now, name a few contributors/themes, clear call to read with the link. Concise, confident, UK English. Two first-line options.`},
+    {t:'LinkedIn — follow-up / engagement post',
+     g:`Write a follow-up LinkedIn post a few days after publication to extend engagement. Pull out one specific argument or data point from the edition that provokes discussion, pose it as a question to the reader, and link back. Not a re-announcement — a conversation starter. Two first-line options. UK English.`},
+  ];
+  const b=briefs[i]||briefs[0];
+  showModal(b.t,
+    'Tailored to this post type and pre-filled from the focus edition. Copy into Claude, or Run with Claude if connected.',
+    `Draft a LinkedIn post for *The Alternative Investor*.
+
+${b.g}
+
+${base}`, b.t);
+}
+
+/* Remembers which Command Centre categories the user has open, so that
+   re-rendering (after changing a task's risk/status) doesn't collapse
+   the section they're working in. Keyed by category name. */
+let catOpenState = {};
+function toggleCat(headerEl, cat){
+  const wrap = headerEl.parentElement;
+  const nowOpen = !wrap.classList.contains('open');
+  wrap.classList.toggle('open', nowOpen);
+  catOpenState[cat] = nowOpen;   // persist the choice
+}
+
+/* Command Centre "what matters" view: 'category' (accordions) or
+   'urgency' (one flat list, banded by how soon things are due).
+   Remembered between sessions. */
+let cmdView = 'category';
+try{ const v=localStorage.getItem('tai_cmd_view'); if(v==='urgency'||v==='category') cmdView=v; }catch(e){}
+function setCmdView(v){
+  cmdView=v;
+  try{ localStorage.setItem('tai_cmd_view',v); }catch(e){}
+  renderCommand();
 }
 
 function renderCommand(){
@@ -688,7 +771,7 @@ function renderCommand(){
   const ed=focusEdition();
   if(DB.focusId && [...sel.options].some(o=>o.value===DB.focusId)) sel.value=DB.focusId;
   else sel.value=ed.id;
-  if(sel.value!==DB.focusId){ DB.focusId=sel.value; save(); }
+  if(sel.value!==DB.focusId){ DB.focusId=sel.value; catOpenState={}; save(); }
   const focus=DB.editions.find(e=>e.id===sel.value)||ed;
 
   const dleft = focus.pub ? daysUntil(focus.pub) : null;
@@ -709,11 +792,46 @@ function renderCommand(){
   renderNewsCountdown(focus);
   renderLinkedInChecklist(focus);
 
-  // categories with open tasks, ordered by worst risk inside
+  // "What matters": two views — by category (accordions) or by urgency (flat, banded)
   const catBox=document.getElementById('catList');
+  const subEl=document.getElementById('cmdViewSub');
+  // reflect active toggle
+  const cvc=document.getElementById('cmdViewCat'), cvu=document.getElementById('cmdViewUrg');
+  if(cvc&&cvu){ cvc.classList.toggle('active',cmdView==='category'); cvu.classList.toggle('active',cmdView==='urgency'); }
+
   if(!open.length){
     catBox.innerHTML=`<div class="empty"><div class="big">Nothing open</div>This edition has no outstanding tasks.</div>`;
+    if(subEl) subEl.textContent='Nothing outstanding for this edition.';
+  } else if(cmdView==='urgency'){
+    if(subEl) subEl.textContent='Open tasks as one list, most urgent first — ignores category.';
+    // band by urgency: overdue, today, this week (1-7d), later
+    const bands=[
+      {key:'over', label:'Overdue', test:d=>d!==null&&d<0},
+      {key:'today',label:'Due today', test:d=>d===0},
+      {key:'week', label:'Next 7 days', test:d=>d!==null&&d>=1&&d<=7},
+      {key:'later',label:'Later', test:d=>d===null||d>7},
+    ];
+    const withD=open.map(t=>({t,d:daysUntil(t.deadline)}));
+    let html='';
+    bands.forEach(b=>{
+      const items=withD.filter(x=>b.test(x.d)).sort((x,y)=>{
+        // inside a band: most overdue / soonest first, then worst risk
+        if(x.d===null&&y.d===null) return RISK_RANK[x.t.risk]-RISK_RANK[y.t.risk];
+        if(x.d===null) return 1;
+        if(y.d===null) return -1;
+        if(x.d!==y.d) return x.d-y.d;
+        return RISK_RANK[x.t.risk]-RISK_RANK[y.t.risk];
+      });
+      if(!items.length) return;
+      const cls = b.key==='over'?'badge red':b.key==='today'?'badge red':b.key==='week'?'badge amber':'badge';
+      html+=`<div class="urg-band">
+        <div class="urg-h"><span class="urg-name">${b.label}</span><span class="${cls}">${items.length}</span></div>
+        ${items.map(x=>cmdRow(focus.id,x.t)).join('')}
+      </div>`;
+    });
+    catBox.innerHTML=html;
   } else {
+    if(subEl) subEl.textContent='Open tasks, grouped by category, worst risk first. Click a category to expand.';
     const byCat={};
     open.forEach(t=>{ (byCat[t.cat]=byCat[t.cat]||[]).push(t); });
     const orderedCats=CATS.filter(c=>byCat[c]);
@@ -725,9 +843,13 @@ function renderCommand(){
       const r=list.filter(t=>t.risk==='Red').length;
       const a=list.filter(t=>t.risk==='Amber').length;
       const badge = r?`<span class="badge red">${r} red</span>`:a?`<span class="badge amber">${a} amber</span>`:`<span class="badge">${list.length}</span>`;
-      const openCls = (i===0||r) ? 'open' : '';
+      // Remember the user's open/closed choice per category. Only fall back
+      // to the smart default (first category + any with red) the very first
+      // time a category is seen, so re-renders never collapse what you opened.
+      if(catOpenState[c]===undefined) catOpenState[c] = (i===0||r>0);
+      const openCls = catOpenState[c] ? 'open' : '';
       return `<div class="cat ${openCls}">
-        <div class="cat-h" onclick="this.parentElement.classList.toggle('open')">
+        <div class="cat-h" onclick="toggleCat(this,'${esc(c).replace(/'/g,"\\'")}')">
           <span class="chev">›</span><span class="cn">${c}</span>${badge}
         </div>
         <div class="cat-b">${list.map(t=>cmdRow(focus.id,t)).join('')}</div>
@@ -792,7 +914,7 @@ function cmdRow(edId,t){
     </div>
   </div>`;
 }
-function setFocus(id){ DB.focusId=id; save(); renderCommand(); document.querySelector('#focusSel').value=id; toast('Focus changed'); }
+function setFocus(id){ DB.focusId=id; catOpenState={}; save(); renderCommand(); document.querySelector('#focusSel').value=id; toast('Focus changed'); }
 function setTaskField(edId,tId,f,v){
   const ed=DB.editions.find(e=>e.id===edId); const t=ed.tasks.find(x=>x.id===tId);
   t[f]=v; save(); renderCommand(); refreshNav();
@@ -988,13 +1110,28 @@ function calSetMode(m){
   }
   renderCalendar();
 }
+/* Each edition gets a colour by its position in the list, so all of an
+   edition's calendar items share a hue. Two palettes: deeper, saturated
+   tones that hold up against the pale light-theme background, and
+   brighter tones for the dark theme. Stable unless editions reorder. */
+const ED_PALETTE_LIGHT=['#1d4ed8','#7c3aed','#0369a1','#0f766e','#be185d','#b45309','#4d7c0f','#b91c1c'];
+const ED_PALETTE_DARK =['#60a5fa','#a78bfa','#38bdf8','#2dd4bf','#f472b6','#fbbf24','#a3e635','#f87171'];
+function editionColour(edId){
+  const i=DB.editions.findIndex(e=>e.id===edId);
+  if(i<0) return 'var(--ink-faint)';
+  let dark=false;
+  try{ dark = document.documentElement.getAttribute('data-theme')==='dark'; }catch(e){}
+  const pal = dark ? ED_PALETTE_DARK : ED_PALETTE_LIGHT;
+  return pal[i % pal.length];
+}
 function calEvents(){
   const ev={};
   const push=(iso,o)=>{ if(!iso) return; (ev[iso]=ev[iso]||[]).push(o); };
   DB.editions.forEach(ed=>{
-    push(ed.pub,{kind:'pub',label:(ed.name||'Edition')+' published',edId:ed.id});
-    push(ed.copy,{kind:'copy',label:(ed.name||'Edition')+' copy due',edId:ed.id});
-    ed.tasks.forEach(t=>{ if(t.status!=='Done') push(t.deadline,{kind:'task',label:t.task,sub:(ed.name||'')+' · '+t.timing,edId:ed.id,taskId:t.id,risk:t.risk,llm:t.llm}); });
+    const colour=editionColour(ed.id);
+    push(ed.pub,{kind:'pub',label:(ed.name||'Edition')+' published',edId:ed.id,colour});
+    push(ed.copy,{kind:'copy',label:(ed.name||'Edition')+' copy due',edId:ed.id,colour});
+    ed.tasks.forEach(t=>{ if(t.status!=='Done') push(t.deadline,{kind:'task',label:t.task,sub:(ed.name||'')+' · '+t.timing,edId:ed.id,taskId:t.id,risk:t.risk,llm:t.llm,colour}); });
   });
   return ev;
 }
@@ -1007,15 +1144,24 @@ function calCell(c, ev, tISO, opts){
   const cap=opts.maxItems||3;
   const shown=items.slice(0,cap); const extra=items.length-shown.length;
   const evh=shown.map((it,idx)=>{
-    let bg='var(--panel-3)',col='var(--ink)',bl='var(--ink-faint)';
-    if(it.kind==='pub'){ bg='var(--orange)'; col='#fff'; bl='var(--orange)'; }
-    else if(it.kind==='copy'){ bg='transparent'; bl='var(--orange)'; }
-    else if(it.risk==='Red') bl='var(--red)';
-    else if(it.risk==='Amber') bl='var(--amber)';
-    else bl='var(--green)';
+    let bg='var(--panel-3)',col='var(--ink)';
+    const edC = it.colour||'var(--ink-faint)';
+    // risk still drives a right-edge accent so it isn't lost
+    let riskC = it.risk==='Red'?'var(--red)':it.risk==='Amber'?'var(--amber)':it.kind==='task'?'var(--green)':'transparent';
+    if(it.kind==='pub'){ bg='var(--orange)'; col='#fff'; riskC='transparent'; }
+    else if(it.kind==='copy'){ bg='transparent'; }
+    // left border = edition colour (which edition); right edge = risk
+    const leftC = it.kind==='pub' ? 'rgba(255,255,255,.65)' : edC;
+    // Tint the whole chip with the edition colour (subtle) so it reads at
+    // a glance, not just via a thin stripe. Publication keeps solid orange.
+    if(it.kind!=='pub'){
+      // explicit fallback first, then color-mix tint for modern browsers
+      bg = `var(--panel-3); background:color-mix(in srgb, ${edC} 14%, var(--panel))`;
+    }
     const wrap = opts.wrap ? 'white-space:normal;' : 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    const riskEdge = riskC!=='transparent' ? `box-shadow:inset -5px 0 0 ${riskC};` : '';
     return `<div onclick="calClick('${iso}',${idx})" title="${esc((it.sub?it.sub+' — ':'')+it.label)}"
-      style="font-size:${opts.fs||10}px;line-height:1.3;padding:2px 5px;border-radius:4px;cursor:pointer;background:${bg};color:${col};border:1px solid ${it.kind==='copy'?bl:'transparent'};border-left:3px solid ${bl};${wrap}font-weight:${it.kind==='pub'?700:500}">${esc(it.label)}</div>`;
+      style="font-size:${opts.fs||10}px;line-height:1.35;padding:3px 7px;border-radius:4px;cursor:pointer;background:${bg};color:${col};border:1px solid ${it.kind==='copy'?edC:'transparent'};border-left:6px solid ${leftC};${riskEdge}${wrap}font-weight:${it.kind==='pub'?700:600}">${esc(it.label)}</div>`;
   }).join('');
   const isT=iso===tISO;
   return `<td style="vertical-align:top;height:${opts.h||96}px;padding:6px 7px;${c.dim?'opacity:.4;':''}${isT?'background:var(--orange-dim);':''}">
@@ -1074,6 +1220,15 @@ function renderCalendar(){
     mb.classList.toggle('active',calMode==='month');
     wb.classList.toggle('active',calMode==='week');
   }
+  // edition colour legend
+  const leg=document.getElementById('calLegend');
+  if(leg){
+    leg.innerHTML = DB.editions.length
+      ? DB.editions.map(e=>`<span style="display:flex;align-items:center;gap:6px">
+          <span style="width:11px;height:11px;border-radius:3px;background:${editionColour(e.id)};display:inline-block"></span>
+          ${esc(e.name||'Untitled edition')}</span>`).join('')
+      : '';
+  }
   renderCalendar._ev=ev;
 }
 function calClick(iso,idx){
@@ -1096,7 +1251,7 @@ function calClick(iso,idx){
    ============================================================ */
 const PROMPTS = {
   focus:{ name:'What to prioritise this month', uc:'Overview',
-    note:'One-click from the Command Centre. Gives you this edition first, then upcoming editions below a line.',
+    note:'One-click from the AI Dashboard. Gives you this edition first, then upcoming editions below a line.',
     build:b=>`You help run the monthly production of *The Alternative Investor*, a UK alternatives newsletter on a T-minus schedule from publication day.
 
 Give me a tight briefing in two parts.
@@ -1189,7 +1344,7 @@ Strong first line (no "delighted to announce"), one clear point on why it matter
 function renderPrompts(){
   document.getElementById('pmtList').innerHTML=Object.keys(PROMPTS).map(k=>{
     const p=PROMPTS[k]; let s;
-    if(k==='focus') s=p.build('[Use "Ask Claude what to prioritise" on the Command Centre to auto-fill]');
+    if(k==='focus') s=p.build('[Use "Ask Claude to prioritise" on the AI Dashboard to auto-fill]');
     else if(k==='edition') s=p.build('[Auto-fills from an edition]');
     else if(['mailchimp','linkedin','synopsis'].includes(k)) s=p.build({ed:'[edition]',syn:'[synopsis]',pub:'[date]',lineup:'[list]'});
     else s=p.build({ed:'[edition]',name:'[name]',org:'[org]',focus:'[focus]',pub:'[pub date]',copy:'[copy date]',syn:'[synopsis]'});
@@ -1255,6 +1410,121 @@ function closeForm(){ document.getElementById('formBg').classList.remove('show')
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); closeForm(); } });
 
 /* ---- Brief + per-task prompt ---- */
+function exportPDF(){
+  if(!DB.editions.length){ toast('Add an edition first'); return; }
+  const dueStr=t=>{ const d=daysUntil(t.deadline);
+    return d===null?'no date':d<0?`${Math.abs(d)} days overdue`:d===0?'due today':`in ${d} day${d===1?'':'s'}`; };
+
+  // Pool every edition's open tasks into one list, tagged with edition.
+  const pool=[];
+  DB.editions.forEach(e=>{
+    e.tasks.filter(t=>t.status!=='Done').forEach(t=>{
+      pool.push({t, edName:e.name||'Untitled', edId:e.id, d:daysUntil(t.deadline)});
+    });
+  });
+
+  const rowHtml=x=>`<tr>
+      <td class="ed">${esc(x.edName)}</td>
+      <td class="tm">${esc(x.t.timing)}</td>
+      <td>${esc(x.t.task)}</td>
+      <td>${esc(x.t.cat)}</td>
+      <td class="r r-${x.t.risk}">${esc(x.t.risk)}</td>
+      <td>${esc(x.t.status)}</td>
+      <td>${esc(fmt(x.t.deadline))}<span class="due"> · ${esc(dueStr(x.t))}</span></td>
+    </tr>`;
+
+  let body='';
+  if(!pool.length){
+    body=`<p class="none">No open actions across any edition.</p>`;
+  } else {
+    const bands=[
+      {label:'Overdue', test:d=>d!==null&&d<0},
+      {label:'Due today', test:d=>d===0},
+      {label:'Next 7 days', test:d=>d!==null&&d>=1&&d<=7},
+      {label:'Later', test:d=>d===null||d>7},
+    ];
+    bands.forEach(b=>{
+      const items=pool.filter(x=>b.test(x.d)).sort((x,y)=>{
+        if(x.d===null&&y.d===null) return RISK_RANK[x.t.risk]-RISK_RANK[y.t.risk];
+        if(x.d===null) return 1; if(y.d===null) return -1;
+        if(x.d!==y.d) return x.d-y.d; return RISK_RANK[x.t.risk]-RISK_RANK[y.t.risk];
+      });
+      if(!items.length) return;
+      body+=`<h3>${b.label} <span class="ct">${items.length}</span></h3>
+        <table><thead><tr><th>Edition</th><th>When</th><th>Action</th><th>Category</th><th>Risk</th><th>Status</th><th>Deadline</th></tr></thead>
+        <tbody>${items.map(rowHtml).join('')}</tbody></table>`;
+    });
+  }
+
+  // Per-edition headline summary at the top
+  const sumRows=DB.editions.slice().sort((a,b)=>{
+    const da=a.pub?new Date(a.pub):Infinity, db=b.pub?new Date(b.pub):Infinity;
+    return da-db;
+  }).map(e=>{
+    const o=e.tasks.filter(t=>t.status!=='Done');
+    const ov=o.filter(t=>{const d=daysUntil(t.deadline);return d!==null&&d<0;}).length;
+    const rd=o.filter(t=>t.risk==='Red').length;
+    return `<tr><td>${esc(e.name||'Untitled')}</td><td>${esc(fmt(e.pub))}</td><td>${esc(fmt(e.copy))}</td><td>${o.length}</td><td class="${ov?'r r-Red':''}">${ov}</td><td class="${rd?'r r-Red':''}">${rd}</td></tr>`;
+  }).join('');
+
+  const totalOpen=pool.length;
+  const totalOver=pool.filter(x=>x.d!==null&&x.d<0).length;
+  const totalRed=pool.filter(x=>x.t.risk==='Red').length;
+  const generated=new Date().toLocaleString('en-GB',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>The Alternative Investor — status ${new Date().toISOString().slice(0,10)}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;color:#1a1d22;padding:34px 38px;font-size:12px;line-height:1.5}
+    .mast{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #e8631f;padding-bottom:12px;margin-bottom:6px}
+    .mast .t{font-size:22px;font-weight:800;color:#e8631f;letter-spacing:-.02em}
+    .mast .t small{display:block;font-size:12px;font-weight:600;color:#1a1d22;letter-spacing:0}
+    .mast .g{font-size:10px;color:#6f7b8b;text-align:right}
+    .meta{display:flex;gap:22px;margin:16px 0 18px;font-size:11px}
+    .meta div span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#6f7b8b;margin-bottom:2px}
+    .meta div b{font-size:16px;font-weight:800}
+    .meta .a b{color:#cf3f30}
+    h2{font-size:13px;margin:22px 0 8px;padding-bottom:4px;border-bottom:1px solid #d8d8d4;text-transform:uppercase;letter-spacing:.08em;color:#525a64}
+    h3{font-size:12px;margin:15px 0 6px;color:#1a1d22}
+    h3 .ct{display:inline-block;background:#eee;color:#525a64;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600;margin-left:6px}
+    table{width:100%;border-collapse:collapse;margin-bottom:6px}
+    th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#6f7b8b;border-bottom:1px solid #d8d8d4;padding:5px 7px}
+    td{padding:5px 7px;border-bottom:1px solid #ededea;vertical-align:top}
+    td.ed{font-weight:700;white-space:nowrap;color:#1a1d22}
+    td.tm{font-weight:700;white-space:nowrap;color:#525a64}
+    td.r{font-weight:700}
+    td.r-Red{color:#cf3f30}td.r-Amber{color:#c4881f}td.r-Green{color:#2f9460}
+    .due{color:#8b919b}
+    .none{color:#8b919b;font-style:italic;margin:14px 0}
+    .ft{margin-top:26px;padding-top:10px;border-top:1px solid #d8d8d4;font-size:9px;color:#8b919b}
+    @media print{ body{padding:0} @page{margin:16mm} thead{display:table-header-group} tr{break-inside:avoid} }
+  </style></head><body>
+    <div class="mast">
+      <div class="t">The Alternative Investor<small>Production status — all editions</small></div>
+      <div class="g">Generated<br>${esc(generated)}</div>
+    </div>
+    <div class="meta">
+      <div><span>Editions</span><b>${DB.editions.length}</b></div>
+      <div><span>Open actions</span><b>${totalOpen}</b></div>
+      <div class="a"><span>Overdue</span><b>${totalOver}</b></div>
+      <div class="a"><span>Red</span><b>${totalRed}</b></div>
+      <div><span>Order</span><b style="font-size:12px;font-weight:700">By urgency</b></div>
+    </div>
+    <h2>Editions overview</h2>
+    <table><thead><tr><th>Edition</th><th>Publishes</th><th>Copy due</th><th>Open</th><th>Overdue</th><th>Red</th></tr></thead>
+    <tbody>${sumRows}</tbody></table>
+    <h2>All open actions — most urgent first</h2>
+    ${body}
+    <div class="ft">The Alternative Investor — production dashboard. Point-in-time snapshot across all editions; the live dashboard is the source of truth.</div>
+  </body></html>`;
+
+  const w=window.open('','_blank');
+  if(!w){ toast('Allow pop-ups for this site to export the PDF'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+  setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} }, 350);
+  toast('Choose "Save as PDF" in the print dialog');
+}
+
 function buildFocusBrief(){
   const ed=focusEdition(); if(!ed){ toast('Add an edition first'); return; }
   const open=ed.tasks.filter(t=>t.status!=='Done').sort((a,b)=>{
@@ -1405,7 +1675,7 @@ function renderGuide(){
 
     <h3>The daily loop</h3>
     <ol>
-      <li>Pick the <strong>focus edition</strong> at the top of the Command Centre.</li>
+      <li>Pick the <strong>focus edition</strong> at the top of the AI Dashboard.</li>
       <li>Read <strong>what matters for this edition</strong> — open tasks grouped by category, worst risk first. Expand a category to see detail.</li>
       <li>Below the divider, glance at <strong>upcoming editions</strong> — what's starting to need attention later.</li>
       <li>Click <strong>Ask Claude what to prioritise</strong>. It builds a brief: this edition in full, then a short note on upcoming editions below a line. Paste into Claude.</li>
