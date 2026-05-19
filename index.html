@@ -276,6 +276,13 @@
     .htools{gap:12px}
     .wm{font-size:22px}
   }
+  .backup-nag{margin:0 0 18px;padding:10px 15px;border-radius:8px;font-family:'Archivo',sans-serif;font-size:12.5px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .backup-nag.warn{background:rgba(207,63,48,.12);border:1px solid rgba(207,63,48,.35);color:var(--ink)}
+  .backup-nag.ok{background:var(--panel);border:1px solid var(--line);color:var(--ink-soft)}
+  .bn-btn{appearance:none;cursor:pointer;font-family:'Archivo',sans-serif;font-size:12px;font-weight:700;border-radius:6px;padding:5px 12px;border:1px solid var(--red);background:var(--red);color:#fff}
+  .bn-btn:hover{filter:brightness(1.05)}
+  .bn-btn.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line-2);font-weight:600}
+  .bn-btn.ghost:hover{border-color:var(--orange);color:var(--orange)}
 </style>
 </head>
 <body>
@@ -297,6 +304,8 @@
     <button data-tab="editions">Editions</button>
     <button data-tab="contributors">Contributors</button>
   </nav>
+
+  <div id="backupNag" class="backup-nag" style="display:none"></div>
 
   <!-- COMMAND CENTRE -->
   <div class="tabpane active" id="tab-command">
@@ -840,11 +849,18 @@ function renderCommand(){
   mainBox.style.display='';
 
   const sel=document.getElementById('focusSel');
+  // Capture the user's pick BEFORE rebuilding options (rebuilding
+  // innerHTML wipes the selection — this was the bug that made the
+  // dropdown snap back to the old edition).
+  const chosenId = sel.value;
   sel.innerHTML=DB.editions.map(e=>`<option value="${e.id}">${esc(e.name||'Untitled edition')}</option>`).join('');
   const ed=focusEdition();
-  if(DB.focusId && [...sel.options].some(o=>o.value===DB.focusId)) sel.value=DB.focusId;
-  else sel.value=ed.id;
-  if(sel.value!==DB.focusId){ DB.focusId=sel.value; catOpenState={}; save(); }
+  let targetId;
+  if(chosenId && [...sel.options].some(o=>o.value===chosenId)) targetId=chosenId;       // honour fresh pick
+  else if(DB.focusId && [...sel.options].some(o=>o.value===DB.focusId)) targetId=DB.focusId;
+  else targetId=ed.id;
+  sel.value=targetId;
+  if(targetId!==DB.focusId){ DB.focusId=targetId; catOpenState={}; save(); }
   const focus=DB.editions.find(e=>e.id===sel.value)||ed;
 
   const dleft = focus.pub ? daysUntil(focus.pub) : null;
@@ -1097,8 +1113,13 @@ function renderContributors(){
       Add an edition first, then add its contributors.</div>`;
     return;
   }
+  // Capture the user's current pick BEFORE we rebuild the options
+  // (rebuilding innerHTML wipes the selection — that was the bug).
+  const chosenId = sel.value;
   sel.innerHTML=DB.editions.map(e=>`<option value="${e.id}">${esc(e.name||'Untitled edition')}</option>`).join('');
-  const ed=DB.editions.find(e=>e.id===sel.value)||DB.editions.find(e=>e.id===DB.focusId)||DB.editions[0];
+  const ed = DB.editions.find(e=>e.id===chosenId)
+          || DB.editions.find(e=>e.id===DB.focusId)
+          || DB.editions[0];
   sel.value=ed.id;
   setConHeading(ed);
   if(!ed.contributors.length){
@@ -1807,11 +1828,54 @@ function contribEmail(edId,cId){
 
 /* ---- Backup ---- */
 function exportData(){
+  // Versioned, dated filename so backups never overwrite each other
+  // and you get a visible history. The browser decides the folder
+  // (set your browser's download location to your Backup folder once).
+  let v = 0;
+  try{ v = parseInt(localStorage.getItem('tai_backup_ver')||'0',10)||0; }catch(e){}
+  v += 1;
+  const stamp=new Date().toISOString().slice(0,10);
+  const fname=`alternative_investor_backup_${stamp}_v${v}.json`;
   const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
   const u=URL.createObjectURL(blob); const a=document.createElement('a');
-  a.href=u; a.download=`alternative-investor-${new Date().toISOString().slice(0,10)}.json`;
+  a.href=u; a.download=fname;
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u);
-  toast('Backup downloaded');
+  try{
+    localStorage.setItem('tai_backup_ver',String(v));
+    localStorage.setItem('tai_last_backup',new Date().toISOString());
+  }catch(e){}
+  toast('Backup saved: '+fname);
+  refreshBackupNag();
+}
+/* Nag: how many whole days since the last backup. */
+function daysSinceBackup(){
+  try{
+    const t=localStorage.getItem('tai_last_backup');
+    if(!t) return null;            // never backed up
+    return Math.floor((Date.now()-new Date(t).getTime())/86400000);
+  }catch(e){ return null; }
+}
+function refreshBackupNag(){
+  const el=document.getElementById('backupNag');
+  if(!el) return;
+  const d=daysSinceBackup();
+  const hasData = DB && DB.editions && DB.editions.length>0;
+  if(!hasData){ el.style.display='none'; return; }
+  if(d===null){
+    el.style.display='';
+    el.className='backup-nag warn';
+    el.innerHTML=`No backup yet. Your data lives only in this browser — <button class="bn-btn" onclick="exportData()">Back up now</button>`;
+    return;
+  }
+  if(d>=3){
+    el.style.display='';
+    el.className='backup-nag warn';
+    el.innerHTML=`Last backup was ${d} day${d===1?'':'s'} ago. <button class="bn-btn" onclick="exportData()">Back up now</button>`;
+  } else {
+    el.style.display='';
+    el.className='backup-nag ok';
+    el.innerHTML=`Backed up ${d===0?'today':d+' day'+(d===1?'':'s')+' ago'}. <button class="bn-btn ghost" onclick="exportData()">Back up again</button>`;
+  }
 }
 function importData(){
   const i=document.createElement('input'); i.type='file'; i.accept='application/json,.json';
@@ -1876,6 +1940,7 @@ function refreshNav(){
 function renderAll(){
   renderCommand(); renderEditions(); renderContributors(); renderPrompts(); renderGuide(); refreshNav();
   if(document.getElementById('tab-calendar').classList.contains('active')) renderCalendar();
+  if(typeof refreshBackupNag==='function') refreshBackupNag();
 }
 renderAll();
 
