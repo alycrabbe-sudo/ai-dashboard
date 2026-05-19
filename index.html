@@ -29,33 +29,37 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{font-family:'Archivo',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5;letter-spacing:-.01em;transition:background .2s,color .2s}
-  .wrap{max-width:1180px;margin:0 auto;padding:0 26px 70px}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 26px 0}
   .mono{font-family:'Archivo',sans-serif}
 
-  header{padding:22px 0 16px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+  /* Full-width header band — mirrors the footer. Deep navy in light
+     mode, lighter navy in dark, so the page is framed top and bottom. */
+  header{width:100%;background:#042C53;border-bottom:1px solid #0C447C}
+  [data-theme="dark"] header{background:#10243f;border-bottom:1px solid #1c3a5e}
+  .head-inner{max-width:1180px;margin:0 auto;padding:22px 26px 20px;
+    display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
   .wm{font-size:27px;font-weight:800;letter-spacing:-.03em;line-height:1;color:var(--orange);display:flex;align-items:baseline;gap:8px}
-  .wm .the{font-size:16px;font-weight:500;letter-spacing:.01em;opacity:.85}
+  .wm .the{font-size:16px;font-weight:500;letter-spacing:.01em;color:#ffffff;opacity:1}
   .htools{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
   .hstat{text-align:right}
-  .hstat .v{font-size:18px;font-weight:700;line-height:1}
-  .hstat .v.warn{color:var(--orange)}
-  .hstat .k{font-family:'Archivo',sans-serif;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-faint);margin-top:4px}
+  .hstat .v{font-size:18px;font-weight:700;line-height:1;color:#E6F1FB}
+  .hstat .v.warn{color:#F0997B}
+  .hstat .k{font-family:'Archivo',sans-serif;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:#85B7EB;margin-top:4px}
 
   /* theme toggle */
-  .tgl{display:flex;align-items:center;gap:8px;font-family:'Archivo',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
-  .sw{width:42px;height:23px;border-radius:20px;background:var(--panel-3);border:1px solid var(--line-2);position:relative;cursor:pointer;transition:.2s;flex:none}
+  .tgl{display:flex;align-items:center;gap:8px;font-family:'Archivo',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#85B7EB}
+  .sw{width:42px;height:23px;border-radius:20px;background:rgba(255,255,255,.14);border:1px solid #378ADD;position:relative;cursor:pointer;transition:.2s;flex:none}
   .sw::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:var(--orange);transition:.2s}
   [data-theme="dark"] .sw::after{transform:translateX(19px)}
 
   nav{display:flex;gap:4px;flex-wrap:wrap;align-items:center;padding:14px 0 0;margin-bottom:24px}
-  nav .nav-spacer{flex:1 1 auto}
   nav button{appearance:none;border:1px solid transparent;background:transparent;cursor:pointer;font-family:'Archivo',sans-serif;font-size:13px;letter-spacing:.01em;color:var(--ink-faint);padding:9px 15px;border-radius:8px;transition:.16s}
   nav button:hover{color:var(--ink);background:var(--panel)}
   nav button.active{color:#fff;background:var(--orange);font-weight:600}
   [data-theme="light"] nav button.active{color:#fff}
-  nav button.call-claude{border:1px solid var(--orange);color:var(--orange);background:transparent;font-weight:700;border-radius:10px;padding:9px 20px}
-  nav button.call-claude:hover{background:var(--orange-dim);color:var(--orange)}
-  nav button.call-claude.active{background:var(--orange);color:#fff;border-color:var(--orange)}
+  .call-claude{appearance:none;cursor:pointer;font-family:'Archivo',sans-serif;font-size:13px;font-weight:700;letter-spacing:.01em;color:#fff;background:var(--orange);border:1px solid var(--orange);border-radius:10px;padding:10px 22px;transition:.16s}
+  .call-claude:hover{filter:brightness(1.06);box-shadow:0 2px 10px rgba(232,99,31,.32)}
+  .call-claude:active{transform:translateY(1px)}
   nav button .pip{display:inline-block;min-width:17px;padding:1px 5px;margin-left:8px;background:var(--red);color:#fff;border-radius:9px;font-size:10px;text-align:center;vertical-align:middle;font-weight:600}
 
   .sec-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin:0 0 18px;flex-wrap:wrap}
@@ -134,6 +138,20 @@
   .li-ai{appearance:none;border:1px solid var(--line-2);background:transparent;color:var(--ink-soft);font-family:'Archivo',sans-serif;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:5px;cursor:pointer;flex:none;transition:.14s}
   .li-ai:hover{border-color:var(--orange);color:var(--orange);background:var(--orange-dim)}
   .li-count{font-size:11px;color:var(--ink-faint);margin-top:10px;text-align:right}
+  .done-empty{font-size:11.5px;color:var(--ink-faint);line-height:1.5;padding:4px 0}
+  .done-scroll{max-height:340px;overflow-y:auto;margin:0 -4px;padding:0 4px}
+  .done-scroll::-webkit-scrollbar{width:7px}
+  .done-scroll::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:4px}
+  .done-scroll{scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+  .done-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+  .done-row:last-of-type{border-bottom:0}
+  .done-box{width:20px;height:20px;border-radius:5px;background:var(--green,#2f9460);border:1.5px solid var(--green,#2f9460);color:#fff;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;transition:.14s}
+  .done-row:hover .done-box{background:transparent;color:var(--ink-faint);border-color:var(--line-2)}
+  .done-label{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .done-label .dl-t{font-size:12.5px;color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--ink-faint)}
+  .done-row:hover .done-label .dl-t{text-decoration:none;color:var(--ink)}
+  .done-label .dl-m{font-size:10px;color:var(--ink-faint);letter-spacing:.04em;text-transform:uppercase}
+  .done-count{font-size:11px;color:var(--ink-faint);margin-top:10px;text-align:right}
   @media(max-width:900px){ .cmd-split{grid-template-columns:1fr} .cmd-right{flex-direction:row;flex-wrap:wrap} .cmd-right .widget{flex:1;min-width:240px} }
   .cal-mini-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin:18px 0 4px;box-shadow:var(--shadow);overflow:hidden}
   .cal-mini-head{display:flex;align-items:center;gap:11px;padding:13px 16px;cursor:pointer;user-select:none}
@@ -200,6 +218,7 @@
 
   .pmt{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:9px;overflow:hidden;box-shadow:var(--shadow)}
   .pmt-h{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 16px;cursor:pointer}
+  .pmt-actions{display:flex;gap:8px;align-items:center;flex:none}
   .pmt-h:hover{background:var(--panel-2)}
   .pmt-h .nm{font-size:15px;font-weight:700}
   .pmt-h .uc{font-family:'Archivo',sans-serif;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--orange);margin-top:2px}
@@ -226,8 +245,20 @@
 
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(18px);background:var(--orange);color:#fff;padding:12px 20px;border-radius:8px;font-family:'Archivo',sans-serif;font-size:11.5px;font-weight:600;box-shadow:0 14px 40px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:.28s;z-index:80}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);font-size:11px;color:var(--ink-faint);line-height:1.7;font-family:'Archivo',sans-serif}
-  footer b{color:var(--ink-soft)}
+  /* Full-width footer band. Deep navy in light mode for strong
+     separation; a lighter navy + subtle border in dark mode so it
+     still reads as a distinct zone against the near-black page. */
+  footer{margin-top:50px;width:100%;font-family:'Archivo',sans-serif;
+    background:#042C53;border-top:1px solid #0C447C}
+  [data-theme="dark"] footer{background:#10243f;border-top:1px solid #1c3a5e}
+  .foot-inner{max-width:1180px;margin:0 auto;padding:26px 26px 32px;
+    font-size:11px;line-height:1.7;color:#85B7EB}
+  .foot-inner b{color:#B5D4F4;font-weight:700}
+  .foot-btn{background:transparent;border:1px solid #378ADD;color:#E6F1FB}
+  .foot-btn:hover{background:rgba(255,255,255,.10);border-color:#85B7EB;color:#fff}
+  [data-theme="dark"] .foot-btn{border-color:#2f6ea8}
+  [data-theme="dark"] .foot-btn:hover{background:rgba(255,255,255,.08);border-color:#85B7EB}
+  @media(max-width:680px){ .foot-inner{padding:22px 15px 28px} }
   .tabpane{display:none;animation:fade .26s}
   .tabpane.active{display:block}
   @keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
@@ -240,30 +271,31 @@
   .gd .callout{background:var(--orange-dim);border-left:3px solid var(--orange);padding:13px 16px;border-radius:0 8px 8px 0;margin:13px 0;font-size:12.5px;color:var(--ink)}
   @media(max-width:680px){
     .row{grid-template-columns:1fr;gap:7px}
-    .wrap{padding:0 15px 50px}
+    .wrap{padding:0 15px 0}
+    .head-inner{padding:18px 15px 16px}
     .htools{gap:12px}
     .wm{font-size:22px}
   }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
+<header>
+  <div class="head-inner">
     <div class="wm"><span class="the">The</span>Alternative Investor</div>
     <div class="htools">
       <div class="hstat"><div class="v" id="todayStr">—</div><div class="k">Today</div></div>
       <div class="hstat"><div class="v warn" id="redCount">—</div><div class="k">Red alerts</div></div>
       <div class="tgl"><span>Light</span><div class="sw" id="themeSw" onclick="toggleTheme()"></div><span>Dark</span></div>
     </div>
-  </header>
+  </div>
+</header>
 
+<div class="wrap">
   <nav id="nav">
     <button data-tab="command" class="active">AI Dashboard</button>
     <button data-tab="calendar">Calendar</button>
     <button data-tab="editions">Editions</button>
     <button data-tab="contributors">Contributors</button>
-    <span class="nav-spacer"></span>
-    <button data-tab="prompts" class="call-claude">Call Claude</button>
   </nav>
 
   <!-- COMMAND CENTRE -->
@@ -306,6 +338,11 @@
             <div class="widget-h">LinkedIn posts this cycle</div>
             <div class="widget-sub" id="liEditionLabel"></div>
             <div id="liChecklist"></div>
+          </div>
+          <div class="widget">
+            <div class="widget-h">Completed this edition</div>
+            <div class="widget-sub" id="doneEditionLabel"></div>
+            <div id="doneList"></div>
           </div>
         </div>
       </div>
@@ -389,12 +426,15 @@
     <div id="guideBody"></div>
   </div>
 
-  <footer>
+</div>
+
+<footer>
+  <div class="foot-inner">
     <div><b>The Alternative Investor — Production Dashboard.</b> Self-contained. Data saves in this browser only; use Back up regularly.</div>
     <div style="margin-top:4px">Daily loop: pick the focus edition → review what matters → ask Claude to prioritise → act → draft from the library.</div>
-    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm ghost" onclick="openTab('guide')">How it works</button><button class="btn sm ghost" onclick="exportData()">Back up</button><button class="btn sm ghost" onclick="importData()">Restore</button><button class="btn sm ghost" onclick="wipeData()">Clear all data</button><button class="btn sm ghost" onclick="configureProxy()">Connect Claude</button></div>
-  </footer>
-</div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm foot-btn" onclick="openTab('prompts')">Claude prompts</button><button class="btn sm foot-btn" onclick="openTab('guide')">How it works</button><button class="btn sm foot-btn" onclick="exportData()">Back up</button><button class="btn sm foot-btn" onclick="importData()">Restore</button><button class="btn sm foot-btn" onclick="wipeData()">Clear all data</button><button class="btn sm foot-btn" onclick="configureProxy()">Connect Claude</button></div>
+  </div>
+</footer>
 
 <div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
   <div class="modal">
@@ -693,6 +733,39 @@ function toggleLi(edId,i){
   ed.liPosts[i]=!ed.liPosts[i];
   save(); renderLinkedInChecklist(ed);
 }
+
+/* Completed-jobs panel: every Done task for the edition, each with a
+   ticked box. Un-ticking sends the job BACK into the workflow as
+   'In progress' (you re-engaged with it; it isn't untouched). */
+function renderDoneList(ed){
+  const box=document.getElementById('doneList'); if(!box) return;
+  const lbl=document.getElementById('doneEditionLabel');
+  if(!ed){ box.innerHTML=''; if(lbl) lbl.textContent=''; return; }
+  if(lbl) lbl.textContent=(ed.name||'This edition');
+  const done=ed.tasks.filter(t=>t.status==='Done')
+    .sort((a,b)=> new Date(a.deadline)-new Date(b.deadline));
+  if(!done.length){
+    box.innerHTML=`<div class="done-empty">Nothing marked done yet. Completed tasks will collect here, and you can send any back into the workflow if it needs more work.</div>`;
+    return;
+  }
+  box.innerHTML=`<div class="done-scroll">`+done.map(t=>`
+    <div class="done-row" title="Click to send back into the workflow">
+      <div class="done-box" onclick="sendBack('${ed.id}','${t.id}')">✓</div>
+      <div class="done-label" onclick="sendBack('${ed.id}','${t.id}')">
+        <span class="dl-t">${esc(t.task)}</span>
+        <span class="dl-m">${esc(t.timing)} · ${esc(t.cat)}</span>
+      </div>
+    </div>`).join('')
+    +`</div><div class="done-count">${done.length} completed · click any to reopen</div>`;
+}
+function sendBack(edId,tId){
+  const ed=DB.editions.find(e=>e.id===edId); if(!ed) return;
+  const t=ed.tasks.find(x=>x.id===tId); if(!t) return;
+  t.status='In progress';   // re-engaged, not untouched
+  save();
+  renderCommand();          // refreshes open list, summary tiles AND the done panel
+  toast('“'+t.task+'” sent back into the workflow (In progress)');
+}
 /* Tailored Claude prompt per LinkedIn post type, pre-filled from the edition. */
 function liPrompt(edId,i){
   const ed=DB.editions.find(e=>e.id===edId); if(!ed) return;
@@ -791,6 +864,7 @@ function renderCommand(){
 
   renderNewsCountdown(focus);
   renderLinkedInChecklist(focus);
+  renderDoneList(focus);
 
   // "What matters": two views — by category (accordions) or by urgency (flat, banded)
   const catBox=document.getElementById('catList');
@@ -1342,20 +1416,109 @@ Publication link: [link] | Contributors:\n${c.lineup||'[list]'}
 Strong first line (no "delighted to announce"), one clear point on why it matters now, name a few contributors/themes, invite to read, concise and professional. UK English. Two first-line options.` },
 };
 function renderPrompts(){
+  const ed = (typeof focusEdition==='function') ? focusEdition() : null;
+  const hasProxy = !!(typeof getProxyUrl==='function' && getProxyUrl());
   document.getElementById('pmtList').innerHTML=Object.keys(PROMPTS).map(k=>{
     const p=PROMPTS[k]; let s;
-    if(k==='focus') s=p.build('[Use "Ask Claude to prioritise" on the AI Dashboard to auto-fill]');
-    else if(k==='edition') s=p.build('[Auto-fills from an edition]');
-    else if(['mailchimp','linkedin','synopsis'].includes(k)) s=p.build({ed:'[edition]',syn:'[synopsis]',pub:'[date]',lineup:'[list]'});
-    else s=p.build({ed:'[edition]',name:'[name]',org:'[org]',focus:'[focus]',pub:'[pub date]',copy:'[copy date]',syn:'[synopsis]'});
+    // Preview: if we have a focus edition, show it filled with real data
+    // so it's obvious the prompt carries live context; else placeholders.
+    if(ed){
+      if(k==='focus') s=p.build('[Live edition data is bundled when you Run with Claude]');
+      else if(k==='edition') s=p.build(libEditionBlock(ed));
+      else if(['mailchimp','linkedin','synopsis'].includes(k)) s=p.build(libContext(ed));
+      else if(LIB_CONTRIB_PROMPTS.includes(k)) s=p.build({ed:ed.name||'[edition]',pub:fmt(ed.pub),copy:fmt(ed.copy),syn:ed.synopsis||'',name:'[choose contributor]',org:'',focus:''});
+      else s=p.build(libContext(ed));
+    } else {
+      if(k==='focus') s=p.build('[Add an edition; live data bundles automatically]');
+      else if(k==='edition') s=p.build('[Add an edition to fill this]');
+      else if(['mailchimp','linkedin','synopsis'].includes(k)) s=p.build({ed:'[edition]',syn:'[synopsis]',pub:'[date]',lineup:'[list]'});
+      else s=p.build({ed:'[edition]',name:'[name]',org:'[org]',focus:'[focus]',pub:'[pub date]',copy:'[copy date]',syn:'[synopsis]'});
+    }
+    const runBtn = `<button class="btn sm" onclick="event.stopPropagation();libRun('${k}')">Run with Claude</button>`;
     return `<div class="pmt">
       <div class="pmt-h" onclick="this.nextElementSibling.classList.toggle('open')">
         <div><div class="nm">${p.name}</div><div class="uc">${p.uc}</div></div>
-        <button class="btn sm" onclick="event.stopPropagation();copyText(document.getElementById('pmt-${k}').textContent,'${p.name}')">Copy</button>
+        <div class="pmt-actions">
+          ${runBtn}
+          <button class="btn sm ghost" onclick="event.stopPropagation();copyText(document.getElementById('pmt-${k}').textContent,'${p.name}')">Copy</button>
+        </div>
       </div>
-      <div class="pmt-b"><pre id="pmt-${k}">${esc(s)}</pre><p class="note">${esc(p.note)}</p></div>
+      <div class="pmt-b"><pre id="pmt-${k}">${esc(s)}</pre><p class="note">${esc(p.note)}${ed?'':' · Add an edition to fill with live data.'}${hasProxy?'':' · Connect Claude (footer) for direct answers.'}</p></div>
     </div>`;
   }).join('');
+}
+
+/* ---- Library "Run with Claude": fill each prompt with the focus
+   edition's real data, then hand off to showModal which already has
+   the proven proxy path. Contributor prompts ask which contributor. */
+function libEditionBlock(ed){
+  const open=ed.tasks.filter(t=>t.status!=='Done').sort((a,b)=>{
+    if(RISK_RANK[a.risk]!==RISK_RANK[b.risk]) return RISK_RANK[a.risk]-RISK_RANK[b.risk];
+    return new Date(a.deadline)-new Date(b.deadline);
+  });
+  const tlines=open.map(t=>{
+    const d=daysUntil(t.deadline);
+    const due=d===null?'no date':d<0?`${Math.abs(d)}d OVERDUE`:d===0?'today':`in ${d}d`;
+    return `- ${t.timing} | ${t.cat} | ${t.task} | risk:${t.risk} | ${t.status} | ${due} (${fmt(t.deadline)})`;
+  });
+  const cons=ed.contributors.map(c=>`- ${c.org||'?'} / ${c.name||'UNASSIGNED'} | ${c.focus||'—'} | ${c.status}`);
+  return `EDITION: ${ed.name} — publishes ${fmt(ed.pub)}, copy due ${fmt(ed.copy)}
+Synopsis: ${ed.synopsis||'(none set)'}
+Focus: ${ed.focus||'(none set)'}
+
+TASKS (open, worst risk first):
+${tlines.join('\n')||'- none'}
+
+CONTRIBUTORS:
+${cons.join('\n')||'- none'}`;
+}
+function libContext(ed){
+  return {
+    ed:ed.name||'[edition]',
+    pub:fmt(ed.pub), copy:fmt(ed.copy),
+    syn:ed.synopsis||'', focus:ed.focus||'',
+    lineup:ed.contributors.map(c=>`- ${c.org||'?'} / ${c.name||'?'} — ${c.focus||''} (${c.status})`).join('\n')||'[none yet]'
+  };
+}
+const LIB_CONTRIB_PROMPTS=['invite','soft','hard','overdue','thanks'];
+function libRun(key){
+  const ed=focusEdition();
+  if(!ed){ toast('Add an edition and set it as focus first'); return; }
+  const p=PROMPTS[key];
+
+  // Edition-state prompts: bundle the full live picture.
+  if(key==='focus'){ buildFocusBrief(); return; }
+  if(key==='edition'){
+    showModal(p.name,'Filled with this edition\u2019s live tasks and contributors. Run with Claude, or copy.',
+      p.build(libEditionBlock(ed)), p.name);
+    return;
+  }
+  // Content prompts that need edition context but not a single contributor.
+  if(['synopsis','mailchimp','linkedin'].includes(key)){
+    showModal(p.name,'Filled from the focus edition. Run with Claude, or copy.',
+      p.build(libContext(ed)), p.name);
+    return;
+  }
+  // Contributor-specific prompts: must pick who.
+  if(LIB_CONTRIB_PROMPTS.includes(key)){
+    const list=ed.contributors;
+    if(!list.length){ toast('No contributors on this edition yet — add them on the Contributors tab'); return; }
+    // build a chooser
+    const opts=list.map((c,i)=>`<option value="${i}">${esc((c.org||'?')+' / '+(c.name||'unassigned')+' — '+(c.status))}</option>`).join('');
+    formModal('Which contributor?',[
+      {key:'idx',label:'Contributor for this '+p.name.toLowerCase(),type:'select',options:list.map((c,i)=>(c.org||'?')+' / '+(c.name||'unassigned')+' — '+c.status)}
+    ],(out)=>{
+      const idx=list.findIndex((c,i)=>((c.org||'?')+' / '+(c.name||'unassigned')+' — '+c.status)===out.idx);
+      const c=list[idx<0?0:idx];
+      const ctx={ed:ed.name||'[edition]',pub:fmt(ed.pub),copy:fmt(ed.copy),syn:ed.synopsis||'',
+        name:c.name||'',org:c.org||'',focus:c.focus||''};
+      showModal(p.name,'Filled for '+(c.name||c.org||'this contributor')+' on '+(ed.name||'this edition')+'. Run with Claude, or copy.',
+        p.build(ctx), p.name);
+    });
+    return;
+  }
+  // Fallback: open with edition context.
+  showModal(p.name,'Filled from the focus edition.',p.build(libContext(ed)),p.name);
 }
 
 /* ---- Modals ---- */
