@@ -121,6 +121,24 @@
   .cmd-right{display:flex;flex-direction:column;gap:14px}
   .widget{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:15px 16px}
   .widget-h{font-family:'Archivo',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:12px}
+  .feat-group-h{font-family:'Archivo',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin:10px 0 6px;padding-top:8px;border-top:1px solid var(--line)}
+  .feat-group-h:first-child{margin-top:0;padding-top:0;border-top:0}
+  .feat-row{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line)}
+  .feat-row:last-child{border-bottom:0}
+  .feat-main{flex:1;min-width:0}
+  .feat-name{font-size:12.5px;font-weight:600;color:var(--ink);line-height:1.3}
+  .feat-name.reg{font-weight:700;letter-spacing:.01em}
+  .feat-org{font-size:11px;color:var(--ink-faint);line-height:1.35;margin-top:2px}
+  .feat-focus{color:var(--ink-soft)}
+  .feat-pill{font-family:'Archivo',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:10px;white-space:nowrap;flex:none;margin-top:1px}
+  .feat-pill.warn{background:rgba(207,63,48,.13);color:var(--red)}
+  .feat-pill.mid{background:rgba(196,136,31,.17);color:var(--amber)}
+  .feat-pill.go{background:rgba(47,148,96,.16);color:var(--green)}
+  .feat-pill.ok{background:rgba(99,103,116,.16);color:var(--ink-faint)}
+  .feat-empty{font-size:11.5px;color:var(--ink-faint);padding:6px 0}
+  .feat-edit{margin-top:10px;text-align:right}
+  .feat-edit a{font-size:10.5px;color:var(--ink-faint);text-decoration:none}
+  .feat-edit a:hover{color:var(--orange)}
   .widget-sub{font-size:11px;color:var(--ink-faint);margin:-6px 0 12px}
   .nc-num{font-size:46px;font-weight:800;line-height:1;letter-spacing:-.03em;color:var(--orange)}
   .nc-num.warn{color:var(--red)}
@@ -213,6 +231,11 @@
   .delx:hover{border-color:var(--red);color:var(--red)}
 
   .empty{text-align:center;padding:54px 22px;color:var(--ink-faint);font-size:13px;background:var(--panel);border:1px dashed var(--line-2);border-radius:var(--r)}
+  .empty.sm{padding:22px 18px}
+  .con-section{margin-bottom:28px}
+  .con-section:last-child{margin-bottom:0}
+  .con-section-h{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px;gap:12px}
+  .con-section-h h3{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin:0;font-weight:700}
   .empty .big{font-size:18px;color:var(--ink-soft);margin-bottom:6px;font-weight:700}
   .empty .btn{margin-top:16px}
 
@@ -342,6 +365,11 @@
           <div class="widget">
             <div class="widget-h">News countdown</div>
             <div id="newsCountdown"></div>
+          </div>
+          <div class="widget">
+            <div class="widget-h">Features</div>
+            <div class="widget-sub" id="featEditionLabel"></div>
+            <div id="featList"></div>
           </div>
           <div class="widget">
             <div class="widget-h">LinkedIn posts this cycle</div>
@@ -537,6 +565,15 @@ function fmtShort(iso){ if(!validDate(iso)) return '—'; const d=new Date(iso+'
 function daysUntil(iso){ if(!validDate(iso)) return null; const d=new Date(iso+'T00:00:00'); return Math.round((d-today)/86400000); }
 
 /* Edition: name, synopsis, focus, pub date, copy date (editable), derived tasks, contributors */
+/* Standing contributors — appear in every edition automatically.
+   The list itself is stable (these four don't change month to month);
+   you can still add more Regulars per edition from the Contributors tab. */
+const REGULAR_CONTRIBUTORS = [
+  {org:'AIMA'},
+  {org:'CAIA'},
+  {org:'Prosek'},
+  {org:'The Money Maze'},
+];
 function makeEdition(name, pubISO, seed){
   seed = seed||{};
   const copy = seed.copy || '';
@@ -549,6 +586,12 @@ function makeEdition(name, pubISO, seed){
     id: uid(), task:m.task, cat:m.cat, timing:m.timing,
     deadline: dateMinus(pubISO, m.offset),
     status:'Not started', risk:'Green', llm:m.llm, notes:''
+  }));
+  // Seed the four standing Regulars into every new edition. Status starts
+  // "Needed"; you update as you go. Guests are added separately.
+  ed.contributors = REGULAR_CONTRIBUTORS.map(r => ({
+    id: uid(), org: r.org, name: '', focus: '',
+    status: 'Needed', type: 'Regular'
   }));
   return ed;
 }
@@ -565,7 +608,7 @@ function rebaseTasks(ed){
    version of this file picks up your existing data automatically
    (same browser + same origin). SCHEMA is the data-shape version:
    future builds migrate old data forward instead of discarding it. ---- */
-const SCHEMA = 2;
+const SCHEMA = 3;
 let DB = null;
 function save(d){
   if(d) DB = d;
@@ -581,6 +624,23 @@ function migrate(data){
       if(e.synopsis===undefined) e.synopsis=e.theme||'';
       if(e.focus===undefined) e.focus=e.loop||'';
       if(!Array.isArray(e.contributors)) e.contributors=[];
+    });
+  }
+  // Schema 3: split contributors into Guests and Regulars.
+  //  - existing contributors (untyped) become Guests, untouched otherwise.
+  //  - add the standing Regulars to every existing edition, with a small
+  //    guard so re-running this never duplicates them.
+  if(!data.schema || data.schema < 3){
+    (data.editions||[]).forEach(e=>{
+      e.contributors = e.contributors || [];
+      e.contributors.forEach(c=>{ if(!c.type) c.type='Guest'; });
+      REGULAR_CONTRIBUTORS.forEach(r=>{
+        const already = e.contributors.some(c => c.type==='Regular' && (c.org||'').trim().toLowerCase()===r.org.toLowerCase());
+        if(!already){
+          e.contributors.push({ id: uid(), org: r.org, name: '', focus: '',
+            status: 'Needed', type: 'Regular' });
+        }
+      });
     });
   }
   // Always: clear any malformed dates that slipped in before validation
@@ -689,6 +749,62 @@ function focusEdition(){
    ============================================================ */
 /* News countdown: dormant until 30 days before publication, then
    counts down to publication day. */
+/* Home-page Features module: a live read of the focus edition's
+   contributors split into Guests and Regulars, with status. Clicking
+   the heading jumps to the Contributors tab to edit. */
+function renderFeatures(ed){
+  const box=document.getElementById('featList'); if(!box) return;
+  const lbl=document.getElementById('featEditionLabel');
+  if(!ed){ box.innerHTML=''; if(lbl) lbl.textContent=''; return; }
+  if(lbl) lbl.textContent = ed.name || 'This edition';
+  const guests = ed.contributors.filter(c => (c.type||'Guest')==='Guest');
+  const regulars = ed.contributors.filter(c => c.type==='Regular');
+  const statusClass = s => {
+    if(s==='Done'||s==='Edited') return 'ok';
+    if(s==='Received'||s==='Confirmed') return 'go';
+    if(s==='Invited') return 'mid';
+    return 'warn';   // Needed
+  };
+  const guestRow = c => `<div class="feat-row">
+    <div class="feat-main">
+      <div class="feat-name">${esc(c.name||'(no name yet)')}</div>
+      <div class="feat-org">${esc(c.org||'—')}${c.focus?` · <span class="feat-focus">${esc(c.focus)}</span>`:''}</div>
+    </div>
+    <span class="feat-pill ${statusClass(c.status)}">${esc(c.status)}</span>
+  </div>`;
+  const regRow = c => `<div class="feat-row">
+    <div class="feat-main">
+      <div class="feat-name reg">${esc(c.org||'(no org)')}</div>
+      ${c.name?`<div class="feat-org">${esc(c.name)}</div>`:''}
+    </div>
+    <span class="feat-pill ${statusClass(c.status)}">${esc(c.status)}</span>
+  </div>`;
+  const guestsHtml = guests.length
+    ? guests.map(guestRow).join('')
+    : `<div class="feat-empty">No guests yet · <a href="#" onclick="openContribsForEdition('${ed.id}');return false;">add</a></div>`;
+  const regsHtml = regulars.length
+    ? regulars.map(regRow).join('')
+    : `<div class="feat-empty">No regulars on this edition.</div>`;
+  box.innerHTML = `
+    <div class="feat-group-h">Guests</div>
+    ${guestsHtml}
+    <div class="feat-group-h">Regulars</div>
+    ${regsHtml}
+    <div class="feat-edit"><a href="#" onclick="openContribsForEdition('${ed.id}');return false;">Edit on Contributors tab →</a></div>`;
+}
+function openContribsForEdition(edId){
+  const sel=document.getElementById('conEd');
+  if(sel) sel.value=edId;
+  // switch tab
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));
+  const btn = document.querySelector('#nav button[data-tab="contributors"]');
+  if(btn) btn.classList.add('active');
+  document.querySelectorAll('.tabpane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-contributors').classList.add('active');
+  renderContributors();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
 function renderNewsCountdown(ed){
   const box=document.getElementById('newsCountdown'); if(!box) return;
   if(!ed || !validDate(ed.pub)){
@@ -878,6 +994,7 @@ function renderCommand(){
     <div class="sum amber"><span class="n">${week}</span><span class="l">Due in 7 days</span></div>
     <div class="sum"><span class="n">${open.length}</span><span class="l">Open tasks</span></div>`;
 
+  renderFeatures(focus);
   renderNewsCountdown(focus);
   renderLinkedInChecklist(focus);
   renderDoneList(focus);
@@ -1122,14 +1239,13 @@ function renderContributors(){
           || DB.editions[0];
   sel.value=ed.id;
   setConHeading(ed);
-  if(!ed.contributors.length){
-    document.getElementById('conWrap').innerHTML=`<div class="empty">
-      <div class="big">No contributors for ${esc(ed.name||'this edition')}</div>
-      Add the organisations and people contributing to this edition.
-      <div><button class="btn" onclick="addContributorRow()">+ Add contributor</button></div></div>`;
-    return;
-  }
-  const rows=ed.contributors.map(c=>`<tr>
+
+  // Partition into Guests and Regulars (default to Guest if untyped).
+  const guests = ed.contributors.filter(c => (c.type||'Guest')==='Guest');
+  const regulars = ed.contributors.filter(c => c.type==='Regular');
+
+  // --- Guests row: full fields incl. focus/topic
+  const guestRow = c => `<tr>
     <td style="min-width:180px"><input class="cin" value="${esc(c.org)}" placeholder="organisation"
       onchange="setConField('${ed.id}','${c.id}','org',this.value)"></td>
     <td style="min-width:180px"><input class="cin" value="${esc(c.name)}" placeholder="contributor name"
@@ -1140,16 +1256,50 @@ function renderContributors(){
       ${opts(['Needed','Invited','Confirmed','Received','Edited','Done'],c.status)}</select></td>
     <td><button class="btn sm" onclick="contribEmail('${ed.id}','${c.id}')">Email</button></td>
     <td><button class="delx" onclick="delContributor('${ed.id}','${c.id}')">×</button></td>
-  </tr>`).join('');
-  document.getElementById('conWrap').innerHTML=`<div class="tbl-wrap"><table>
-    <thead><tr><th>Organisation</th><th>Contributor</th><th>Focus</th><th>Status</th><th>Email</th><th></th></tr></thead>
-    <tbody>${rows}</tbody></table></div>`;
+  </tr>`;
+  // --- Regulars row: no focus/topic field; still has name (optional) and status
+  const regRow = c => `<tr>
+    <td style="min-width:180px"><input class="cin" value="${esc(c.org)}" placeholder="organisation"
+      onchange="setConField('${ed.id}','${c.id}','org',this.value)"></td>
+    <td style="min-width:180px"><input class="cin" value="${esc(c.name)}" placeholder="contact (optional)"
+      onchange="setConField('${ed.id}','${c.id}','name',this.value)"></td>
+    <td><select class="st" onchange="setConField('${ed.id}','${c.id}','status',this.value)">
+      ${opts(['Needed','Invited','Confirmed','Received','Edited','Done'],c.status)}</select></td>
+    <td><button class="btn sm" onclick="contribEmail('${ed.id}','${c.id}')">Email</button></td>
+    <td><button class="delx" onclick="delContributor('${ed.id}','${c.id}')">×</button></td>
+  </tr>`;
+
+  const guestsBlock = guests.length
+    ? `<div class="tbl-wrap"><table>
+        <thead><tr><th>Organisation</th><th>Contributor</th><th>Focus</th><th>Status</th><th>Email</th><th></th></tr></thead>
+        <tbody>${guests.map(guestRow).join('')}</tbody></table></div>`
+    : `<div class="empty sm">No guests yet for ${esc(ed.name||'this edition')}.
+        <div><button class="btn sm" onclick="addGuestRow()">+ Add guest</button></div></div>`;
+
+  const regularsBlock = regulars.length
+    ? `<div class="tbl-wrap"><table>
+        <thead><tr><th>Organisation</th><th>Contact</th><th>Status</th><th>Email</th><th></th></tr></thead>
+        <tbody>${regulars.map(regRow).join('')}</tbody></table></div>`
+    : `<div class="empty sm">No regulars on this edition.
+        <div><button class="btn sm" onclick="addRegularRow()">+ Add regular</button></div></div>`;
+
+  document.getElementById('conWrap').innerHTML = `
+    <div class="con-section">
+      <div class="con-section-h"><h3>Guests</h3>
+        <button class="btn sm" onclick="addGuestRow()">+ Add guest</button></div>
+      ${guestsBlock}
+    </div>
+    <div class="con-section">
+      <div class="con-section-h"><h3>Regulars</h3>
+        <button class="btn sm ghost" onclick="addRegularRow()">+ Add regular</button></div>
+      ${regularsBlock}
+    </div>`;
 }
-function addContributorRow(){
+function addGuestRow(){
   if(!DB.editions.length){ toast('Add an edition first'); return; }
   const sel=document.getElementById('conEd');
   const ed=DB.editions.find(e=>e.id===sel.value)||DB.editions.find(e=>e.id===DB.focusId)||DB.editions[0];
-  ed.contributors.push({ id:uid(), org:'', name:'', focus:'', status:'Needed' });
+  ed.contributors.push({ id:uid(), org:'', name:'', focus:'', status:'Needed', type:'Guest' });
   save();
   document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));
   document.querySelector('#nav button[data-tab="contributors"]').classList.add('active');
@@ -1157,6 +1307,16 @@ function addContributorRow(){
   document.getElementById('tab-contributors').classList.add('active');
   sel.value=ed.id; renderContributors();
 }
+function addRegularRow(){
+  if(!DB.editions.length){ toast('Add an edition first'); return; }
+  const sel=document.getElementById('conEd');
+  const ed=DB.editions.find(e=>e.id===sel.value)||DB.editions.find(e=>e.id===DB.focusId)||DB.editions[0];
+  ed.contributors.push({ id:uid(), org:'', name:'', focus:'', status:'Needed', type:'Regular' });
+  save();
+  sel.value=ed.id; renderContributors();
+}
+// Back-compat alias: any old caller of addContributorRow gets a guest.
+function addContributorRow(){ addGuestRow(); }
 function setConField(edId,cId,f,v){
   const ed=DB.editions.find(e=>e.id===edId);
   const c=ed.contributors.find(x=>x.id===cId); c[f]=v; save();
