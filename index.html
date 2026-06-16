@@ -139,6 +139,10 @@
   .feat-edit{margin-top:10px;text-align:right}
   .feat-edit a{font-size:10.5px;color:var(--ink-faint);text-decoration:none}
   .feat-edit a:hover{color:var(--orange)}
+  .launch-card{display:flex;align-items:center;gap:14px;padding:16px 20px;margin:0 0 22px;border-radius:var(--r);background:linear-gradient(90deg,rgba(232,108,67,0.10),rgba(232,108,67,0.04));border:1px solid rgba(232,108,67,0.35)}
+  .launch-main{flex:1;min-width:0}
+  .launch-h{font-size:14.5px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+  .launch-sub{font-size:12px;color:var(--ink-soft);margin-top:2px}
   .widget-sub{font-size:11px;color:var(--ink-faint);margin:-6px 0 12px}
   .nc-num{font-size:46px;font-weight:800;line-height:1;letter-spacing:-.03em;color:var(--orange)}
   .nc-num.warn{color:var(--red)}
@@ -340,6 +344,8 @@
         <div class="spacer"></div>
         <div class="meta" id="focusMeta"></div>
       </div>
+
+      <div id="launchBanner" style="display:none"></div>
 
       <div class="cmd-split">
         <div class="cmd-left">
@@ -776,6 +782,204 @@ function focusEdition(){
 /* Home-page Features module: a live read of the focus edition's
    contributors split into Guests and Regulars, with status. Clicking
    the heading jumps to the Contributors tab to edit. */
+/* ============================================================
+   POST-LAUNCH ACTION — once the edition has gone out, prompt the
+   user to paste in the articles and generate one LinkedIn post
+   per article on a schedule for the month-after-launch.
+
+   Visible only when focus edition has been published (pub date is
+   today or earlier). Output is a plain .txt file the user can
+   keep as their posting schedule.
+   ============================================================ */
+function renderLaunchBanner(ed){
+  const box=document.getElementById('launchBanner'); if(!box) return;
+  if(!ed || !ed.pub){ box.style.display='none'; box.innerHTML=''; return; }
+  const d=daysUntil(ed.pub);
+  // Show only once edition has gone out (publication today or in the past).
+  if(d===null || d>0){ box.style.display='none'; box.innerHTML=''; return; }
+  const sinceLaunch = Math.abs(d);
+  const window = sinceLaunch===0 ? 'today' : (sinceLaunch===1 ? 'yesterday' : `${sinceLaunch} days ago`);
+  box.style.display='';
+  box.innerHTML = `<div class="launch-card">
+    <div class="launch-main">
+      <div class="launch-h">${esc(ed.name||'This edition')} launched ${window}</div>
+      <div class="launch-sub">Generate the month\u2019s LinkedIn posts from the articles.</div>
+    </div>
+    <button class="btn" onclick="openLaunchPostsModal('${ed.id}')">Draft LinkedIn posts</button>
+  </div>`;
+}
+
+/* Split pasted article text into individual articles using "# Title"
+   headings as the delimiter — matches the docx export format used. */
+function splitArticles(txt){
+  if(!txt) return [];
+  const parts=[];
+  // Lines beginning with "# " are headings (markdown-style); split on those.
+  const lines=txt.replace(/\r\n/g,'\n').split('\n');
+  let cur=null;
+  for(const line of lines){
+    const m=line.match(/^\s*#\s+(.+?)\s*$/);
+    if(m){
+      if(cur) parts.push(cur);
+      cur={title:m[1].trim(), body:''};
+    } else if(cur){
+      cur.body += line + '\n';
+    }
+  }
+  if(cur) parts.push(cur);
+  // Filter empties; trim
+  return parts.filter(p=>p.title && p.body.trim().length>80).map(p=>({title:p.title,body:p.body.trim()}));
+}
+
+/* Distribute N posts evenly across the month following publication,
+   first post always day-after-launch. Returns an array of yyyy-mm-dd. */
+function schedulePostDates(pubISO, n){
+  if(!n) return [];
+  const start=new Date(pubISO); start.setDate(start.getDate()+1); // day +1
+  const dates=[];
+  if(n===1){ dates.push(toISO(start)); return dates; }
+  // Distribute remaining (n-1) posts evenly between day +5 and day +28
+  dates.push(toISO(start));
+  const lastOffset=28;
+  const firstOffset=5;
+  const stepCount=n-1;
+  for(let i=1;i<n;i++){
+    const offset = firstOffset + Math.round((lastOffset-firstOffset) * (i-1) / Math.max(1,stepCount-1));
+    const dt=new Date(pubISO); dt.setDate(dt.getDate()+offset);
+    dates.push(toISO(dt));
+  }
+  return dates;
+}
+function toISO(d){ const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const dd=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}`; }
+
+/* The modal: paste the articles, click generate. */
+function openLaunchPostsModal(edId){
+  const ed=DB.editions.find(e=>e.id===edId); if(!ed){ toast('Edition not found'); return; }
+  const fields=[
+    {key:'articles',label:'Paste all article text here. Use "# Title" lines as headings between articles (matches the format your articles export in).',type:'textarea',placeholder:'# In Blockchain We Trust\n\nLet\u2019s take a look at infrastructure...\n\n# The tourists may have gone...\n\n...'},
+  ];
+  formModal('Draft LinkedIn posts — '+(ed.name||'edition'), fields, async (out)=>{
+    const articles=splitArticles(out.articles||'');
+    if(articles.length===0){
+      toast('Couldn\u2019t find articles in that text. Use "# Title" lines to mark each one.');
+      return;
+    }
+    const dates=schedulePostDates(ed.pub, articles.length);
+    // Show "working" modal
+    showModal('Drafting posts...', `Asking Claude for ${articles.length} LinkedIn post${articles.length===1?'':'s'}, one per article. This can take 20\u201340 seconds.`, '', 'Drafts');
+    const runBtn=document.getElementById('mRun'); if(runBtn){ runBtn.style.display='none'; }
+    try{
+      const drafts = await draftLaunchPosts(ed, articles, dates);
+      const txt = buildLaunchTxt(ed, articles, dates, drafts);
+      const stamp = new Date().toISOString().slice(0,10);
+      const fname = `linkedin_posts_${(ed.name||'edition').toLowerCase().replace(/[^a-z0-9]+/g,'_')}_${stamp}.txt`;
+      const blob = new Blob([txt],{type:'text/plain'});
+      const u=URL.createObjectURL(blob); const a=document.createElement('a');
+      a.href=u; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u);
+      document.getElementById('mTitle').textContent = `Drafted ${articles.length} post${articles.length===1?'':'s'} \u2014 saved as ${fname}`;
+      document.getElementById('mIntro').textContent = 'Schedule below. The file has just downloaded; move it somewhere durable. You can re-run to regenerate.';
+      document.getElementById('mBody').textContent = txt;
+      if(runBtn) runBtn.style.display='none';
+    }catch(err){
+      document.getElementById('mTitle').textContent='Couldn\u2019t draft posts';
+      document.getElementById('mIntro').textContent=String(err && err.message || err);
+      document.getElementById('mBody').textContent='';
+    }
+  });
+}
+
+/* The Claude prompt. The anti-AI-voice rules are baked in here because
+   leaving them to the user means they get forgotten. */
+async function draftLaunchPosts(ed, articles, dates){
+  const articleBlocks = articles.map((a,i)=>
+    `--- ARTICLE ${i+1} ---\nTITLE: ${a.title}\nPOST DATE: ${fmt(dates[i])}\n\nBODY:\n${a.body}`
+  ).join('\n\n');
+  const prompt = `You are drafting LinkedIn posts for The Alternative Investor, a UK newsletter for the alternatives industry. The edition (${ed.name||'this edition'}) has just been published.
+
+I will give you ${articles.length} article${articles.length===1?'':'s'} from the edition. For each article, write ONE LinkedIn post.
+
+THESE RULES ARE NON-NEGOTIABLE. Posts that violate them are worse than useless because they damage the publication\u2019s voice.
+
+1. The posts must NOT sound like they were written by an AI. That means:
+   - NEVER open with "Delighted to share", "Excited to announce", "Thrilled to", "Honoured to", or any variant.
+   - NEVER use these phrases: "in today\u2019s rapidly evolving landscape", "now more than ever", "game-changer", "deep dive", "unpack", "key takeaways", "thought-provoking", "must-read".
+   - NEVER use rocket, fire, lightbulb, target, or sparkle emojis (or any emoji as decoration).
+   - NO hashtag soup at the end. One or two genuinely relevant hashtags maximum, only if natural.
+   - NO em-dashes used as punctuation crutches when a full stop would do.
+   - NO numbered listicles ("3 reasons why...").
+
+2. What the posts SHOULD do:
+   - Open with something specific and surprising from the actual article. A counter-intuitive line, a sharp claim, a concrete data point, or a striking turn of phrase the author used.
+   - You may include a short direct quote (under 25 words) from the article in quote marks if it\u2019s genuinely arresting. Pick the best line, not a generic one. Use the author\u2019s actual voice.
+   - Vary the structure across posts. Don\u2019t use the same opening pattern twice.
+   - Sound like a thinking human editor introducing a piece they actually read, not a marketer summarising.
+   - Be specific to the article\u2019s argument. Not vague summaries.
+   - Lean toward sentence-fragment energy where it suits. Confidence over completeness.
+   - Length: 80\u2013150 words. Shorter is usually better.
+   - Attribute the author by name and affiliation at the end of the post, as a short tag (not "by", just the name and org on its own line).
+   - Add a line at the end: "Read the full piece in ${ed.name||'this month\u2019s edition'}." (You don\u2019t need a link \u2014 the user will add it.)
+
+3. Output format \u2014 follow this EXACTLY:
+   For each article, return:
+
+   ===POST ${1}===
+   [post body]
+   ===END===
+
+   ...where the number increments. Don\u2019t add commentary, preambles, or summaries between posts. Just the posts in order.
+
+${articleBlocks}`;
+
+  const url = getProxyUrl();
+  if(!url) throw new Error('Claude proxy not configured. Connect Claude from the footer first.');
+  const r = await fetch(url,{
+    method:'POST', headers:{'content-type':'application/json'},
+    body: JSON.stringify({prompt})
+  });
+  if(!r.ok){ throw new Error('Proxy returned '+r.status); }
+  const data = await r.json();
+  const text = data.text || '';
+  // Parse out posts in order using the markers.
+  const re = /===POST\s+(\d+)===\s*([\s\S]*?)\s*===END===/gi;
+  const drafts=[];
+  let m;
+  while((m=re.exec(text))!==null){
+    drafts.push({n: parseInt(m[1],10), body: m[2].trim()});
+  }
+  drafts.sort((a,b)=>a.n-b.n);
+  if(drafts.length===0){
+    // Fallback: return the whole response as a single block so user sees something
+    return articles.map((_,i)=>({n:i+1, body:i===0?text.trim():'(no draft returned for this article)'}));
+  }
+  // If Claude returned fewer than articles, pad
+  while(drafts.length < articles.length) drafts.push({n: drafts.length+1, body:'(Claude didn\u2019t return a draft for this article \u2014 try regenerating.)'});
+  return drafts;
+}
+
+/* Build the .txt schedule the user downloads. */
+function buildLaunchTxt(ed, articles, dates, drafts){
+  const lines=[];
+  lines.push(`LinkedIn posts \u2014 ${ed.name||'edition'}`);
+  lines.push(`Published: ${fmt(ed.pub)}`);
+  lines.push(`Posts: ${articles.length}, scheduled over the month following publication.`);
+  lines.push('');
+  lines.push('Read down the file; one block per post.');
+  lines.push('Move this file somewhere durable (cloud drive / your notes folder).');
+  lines.push('');
+  lines.push('='.repeat(60));
+  for(let i=0;i<articles.length;i++){
+    lines.push('');
+    lines.push(`POST ${i+1} of ${articles.length}`);
+    lines.push(`Date to post: ${fmt(dates[i])}`);
+    lines.push(`Article: ${articles[i].title}`);
+    lines.push('-'.repeat(60));
+    lines.push((drafts[i] && drafts[i].body) || '(no draft)');
+    lines.push('');
+    lines.push('='.repeat(60));
+  }
+  return lines.join('\n');
+}
+
 function renderFeatures(ed){
   const box=document.getElementById('featList'); if(!box) return;
   const lbl=document.getElementById('featEditionLabel');
@@ -1018,6 +1222,7 @@ function renderCommand(){
     <div class="sum amber"><span class="n">${week}</span><span class="l">Due in 7 days</span></div>
     <div class="sum"><span class="n">${open.length}</span><span class="l">Open tasks</span></div>`;
 
+  renderLaunchBanner(focus);
   renderFeatures(focus);
   renderNewsCountdown(focus);
   renderLinkedInChecklist(focus);
