@@ -145,6 +145,8 @@
   .launch-sub{font-size:12px;color:var(--ink-soft);margin-top:2px}
   /* Per-post result cards in the LinkedIn drafts modal */
   .postcards-wrap{display:flex;flex-direction:column;gap:14px;max-height:62vh;overflow-y:auto;padding:4px 2px}
+  .postcards-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:4px 2px 8px;border-bottom:1px solid var(--line);margin-bottom:4px}
+  .postcards-toolbar-meta{font-family:'Archivo',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint)}
   .postcard{border:1px solid var(--line);background:var(--panel);border-radius:var(--r);padding:14px 16px}
   .postcard-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
   .postcard-meta{font-family:'Archivo',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:3px}
@@ -892,8 +894,11 @@ function openLaunchPostsModal(edId){
       const blob = new Blob([txt],{type:'text/plain'});
       const u=URL.createObjectURL(blob); const a=document.createElement('a');
       a.href=u; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u);
-      // Stash post bodies for per-post Copy.
-      window.__lastDrafts = drafts.map(d=>d.body||'');
+      // Stash full post records so Copy-all and per-post Copy both work.
+      window.__lastPostSet = articles.map((a,i)=>({
+        n: i+1, of: articles.length, date: fmt(dates[i]),
+        title: a.title, body: (drafts[i] && drafts[i].body) || ''
+      }));
       // Render per-post cards into the modal body. Replace the <pre> default
       // with structured HTML; each post has its own Copy button. Setting
       // innerHTML on the <pre> keeps the element in place (so showModal
@@ -913,10 +918,15 @@ function openLaunchPostsModal(edId){
           <textarea class="postcard-body" id="draft-${i}" readonly>${esc(body)}</textarea>
         </div>`;
       }).join('');
+      // Toolbar above the cards: Copy ALL posts as one blob, with dates and titles.
+      const toolbar = `<div class="postcards-toolbar">
+        <div class="postcards-toolbar-meta">${articles.length} post${articles.length===1?'':'s'} \u00b7 scheduled across the month</div>
+        <button class="btn sm" onclick="copyAllDrafts(this)">Copy all posts</button>
+      </div>`;
       mBody.setAttribute('style','font-family:inherit;white-space:normal;background:transparent;padding:0;display:flex;flex-direction:column;gap:14px;max-height:62vh;overflow-y:auto');
-      mBody.innerHTML = cards;
+      mBody.innerHTML = toolbar + cards;
       document.getElementById('mTitle').textContent = `Drafted ${articles.length} post${articles.length===1?'':'s'}`;
-      document.getElementById('mIntro').innerHTML = `Click <b>Copy</b> on a post to grab just that one. The full schedule has also downloaded as <code>${esc(fname)}</code>.`;
+      document.getElementById('mIntro').innerHTML = `Use <b>Copy all posts</b> for the whole set, or <b>Copy</b> on any single post. The full schedule has also downloaded as <code>${esc(fname)}</code>.`;
     }catch(err){
       document.getElementById('mTitle').textContent='Couldn\u2019t draft posts';
       document.getElementById('mIntro').textContent=String(err && err.message || err);
@@ -937,6 +947,24 @@ function copyDraft(i, btn){
     setTimeout(()=>{ btn.textContent=o; btn.disabled=false; }, 1400);
   }
 }
+/* Copy ALL posts at once. Concatenated with each post preceded by
+   its schedule metadata ("Post N of M · DD MMM YYYY · Article title")
+   so the dates and order are preserved when pasted into a planning doc. */
+function copyAllDrafts(btn){
+  const set = window.__lastPostSet || [];
+  if(!set.length){ return; }
+  const blocks = set.map(p =>
+    `Post ${p.n} of ${p.of} \u00b7 ${p.date} \u00b7 ${p.title}\n\n${p.body}`
+  );
+  // Two blank lines between posts so paragraph break is clear when pasted.
+  copyText(blocks.join('\n\n\n'), 'All '+set.length+' posts');
+  if(btn){
+    const o=btn.textContent;
+    btn.textContent='Copied all';
+    btn.disabled=true;
+    setTimeout(()=>{ btn.textContent=o; btn.disabled=false; }, 1400);
+  }
+}
 
 /* The Claude prompt. The anti-AI-voice rules are baked in here because
    leaving them to the user means they get forgotten. */
@@ -948,38 +976,32 @@ async function draftLaunchPosts(ed, articles, dates){
 
 I will give you ${articles.length} article${articles.length===1?'':'s'} from the edition. For each article, write ONE LinkedIn post.
 
-THESE RULES ARE NON-NEGOTIABLE. Posts that violate them are worse than useless because they damage the publication\u2019s voice.
+THE SPIRIT (this is what matters most):
 
-1. The posts must NOT sound like they were written by an AI. That means:
-   - NEVER open with "Delighted to share", "Excited to announce", "Thrilled to", "Honoured to", or any variant.
-   - NEVER use these phrases: "in today\u2019s rapidly evolving landscape", "now more than ever", "game-changer", "deep dive", "unpack", "key takeaways", "thought-provoking", "must-read".
-   - NEVER use rocket, fire, lightbulb, target, or sparkle emojis (or any emoji as decoration).
-   - End with 1\u20132 relevant hashtags on a final line, drawn from the article\u2019s specific subject (e.g. #PrivateCredit, #ImpactInvesting, #Tokenisation, #SFDR, #Activism). Pick hashtags that a serious industry reader would actually search. NEVER use generic filler hashtags like #Finance, #Investing, #Business, #Markets, #Innovation. NEVER use more than two. Place them on their own line at the very end after the CTA lines.
-   - NO em-dashes used as punctuation crutches when a full stop would do.
-   - NO numbered listicles ("3 reasons why...").
+Write each post as a market participant with a point, not a model summarising a theme. The voice is someone who reads this stuff for a living, has formed a view, and trusts the reader to keep up. Specificity beats polish. A concrete detail \u2014 a number, a named deal, a regulatory clause, an exact phrase from the article \u2014 does more work than any amount of careful framing. If a sentence could appear in any post about any subject, cut it.
 
-2. What the posts SHOULD do:
-   - Open with something specific and surprising from the actual article. A counter-intuitive line, a sharp claim, a concrete data point, or a striking turn of phrase the author used.
-   - You may include a short direct quote (under 25 words) from the article in quote marks if it\u2019s genuinely arresting. Pick the best line, not a generic one. Use the author\u2019s actual voice.
-   - Vary the structure across posts. Don\u2019t use the same opening pattern twice.
-   - Sound like a thinking human editor introducing a piece they actually read, not a marketer summarising.
-   - Be specific to the article\u2019s argument. Not vague summaries.
-   - Lean toward sentence-fragment energy where it suits. Confidence over completeness.
-   - Length: 80\u2013150 words. Shorter is usually better.
-   - Name the author and their organisation naturally inside the body of the post (not as a tag at the end). For example, "Mark Kollar at Prosek Partners argues that..." or "Writing in this month's edition, Thomas Sharpe (AIMA) makes the case that..." Vary the placement across posts.
-   - End the post with TWO lines, exactly as shown, each on its own line:
-     Read the full piece [link to add]
-     Sign up [link to add]
-   These placeholders are for the user to fill in. Do not invent URLs or replace them.
+Read the article first. Find the one thing in it that you, as a reader, didn\u2019t already know or hadn\u2019t already heard framed that way. Build the post around that. Quote the author where the original line is sharper than anything you\u2019d write. End where the point ends, not where a neat conclusion would.
 
-3. Output format \u2014 follow this EXACTLY:
-   For each article, return:
+TWO HARD PUNCTUATION RULES, no exceptions:
+- No colons. Anywhere. Not in openings, not before attribution, not as a setup-payoff device.
+- No em-dashes. Use a full stop where you\u2019re tempted to use one.
+
+OPERATIONAL FORMAT:
+- 80\u2013150 words in the body. Often less.
+- Name the author and their organisation inside the body, woven naturally into a sentence. Vary the placement.
+- Body ends. Then two CTA lines, exactly as shown, each on its own line:
+  Read the full piece [link to add]
+  Sign up [link to add]
+- Then one final line with 1\u20132 specific, article-relevant hashtags (e.g. #SFDR, #PrivateCredit, #Tokenisation, #Activism). Not generic filler (no #Finance, #Investing, #Business, #Markets).
+
+OUTPUT \u2014 follow this exactly:
+For each article, return:
 
    ===POST ${1}===
-   [post body]
+   [post body, CTA lines, hashtag line]
    ===END===
 
-   ...where the number increments. Don\u2019t add commentary, preambles, or summaries between posts. Just the posts in order.
+\u2026where the number increments. No commentary or preambles between posts.
 
 ${articleBlocks}`;
 
