@@ -143,6 +143,14 @@
   .launch-main{flex:1;min-width:0}
   .launch-h{font-size:14.5px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
   .launch-sub{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  /* Per-post result cards in the LinkedIn drafts modal */
+  .postcards-wrap{display:flex;flex-direction:column;gap:14px;max-height:62vh;overflow-y:auto;padding:4px 2px}
+  .postcard{border:1px solid var(--line);background:var(--panel);border-radius:var(--r);padding:14px 16px}
+  .postcard-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+  .postcard-meta{font-family:'Archivo',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:3px}
+  .postcard-title{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.3}
+  .postcard-body{width:100%;min-height:180px;font-family:inherit;font-size:13px;line-height:1.55;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:8px;padding:10px 12px;resize:vertical;box-sizing:border-box}
+  .postcard-body:focus{outline:1px solid var(--orange);outline-offset:0}
   .widget-sub{font-size:11px;color:var(--ink-faint);margin:-6px 0 12px}
   .nc-num{font-size:46px;font-weight:800;line-height:1;letter-spacing:-.03em;color:var(--orange)}
   .nc-num.warn{color:var(--red)}
@@ -810,15 +818,17 @@ function renderLaunchBanner(ed){
 }
 
 /* Split pasted article text into individual articles using "# Title"
-   headings as the delimiter — matches the docx export format used. */
+   or "#Title" headings as the delimiter. Forgiving: any number of
+   leading hashes, space optional, surrounding whitespace stripped. */
 function splitArticles(txt){
   if(!txt) return [];
   const parts=[];
-  // Lines beginning with "# " are headings (markdown-style); split on those.
   const lines=txt.replace(/\r\n/g,'\n').split('\n');
   let cur=null;
   for(const line of lines){
-    const m=line.match(/^\s*#\s+(.+?)\s*$/);
+    // Accept "#Title", "# Title", "## Title", with optional leading whitespace
+    // and a non-hash, non-space first character in the title body.
+    const m=line.match(/^\s*#{1,6}\s*([^\s#].*?)\s*$/);
     if(m){
       if(cur) parts.push(cur);
       cur={title:m[1].trim(), body:''};
@@ -827,8 +837,9 @@ function splitArticles(txt){
     }
   }
   if(cur) parts.push(cur);
-  // Filter empties; trim
-  return parts.filter(p=>p.title && p.body.trim().length>80).map(p=>({title:p.title,body:p.body.trim()}));
+  // Filter empties; trim. Lowered body-length threshold to 40 chars so
+  // short pieces don't get silently dropped.
+  return parts.filter(p=>p.title && p.body.trim().length>40).map(p=>({title:p.title,body:p.body.trim()}));
 }
 
 /* Distribute N posts evenly across the month following publication,
@@ -861,13 +872,18 @@ function openLaunchPostsModal(edId){
   formModal('Draft LinkedIn posts — '+(ed.name||'edition'), fields, async (out)=>{
     const articles=splitArticles(out.articles||'');
     if(articles.length===0){
-      toast('Couldn\u2019t find articles in that text. Use "# Title" lines to mark each one.');
+      toast('No articles detected. Each article needs a heading line starting with # (e.g. "# In Blockchain We Trust") on its own line.');
       return;
     }
     const dates=schedulePostDates(ed.pub, articles.length);
     // Show "working" modal
     showModal('Drafting posts...', `Asking Claude for ${articles.length} LinkedIn post${articles.length===1?'':'s'}, one per article. This can take 20\u201340 seconds.`, '', 'Drafts');
-    const runBtn=document.getElementById('mRun'); if(runBtn){ runBtn.style.display='none'; }
+    const mBody=document.getElementById('mBody');
+    const mRunBtn=document.getElementById('mRun');
+    const mCopyBtn=document.getElementById('mCopy');
+    if(mRunBtn) mRunBtn.style.display='none';
+    // Hide the generic "Copy to clipboard" — we're using per-post Copy buttons.
+    if(mCopyBtn) mCopyBtn.style.display='none';
     try{
       const drafts = await draftLaunchPosts(ed, articles, dates);
       const txt = buildLaunchTxt(ed, articles, dates, drafts);
@@ -876,16 +892,50 @@ function openLaunchPostsModal(edId){
       const blob = new Blob([txt],{type:'text/plain'});
       const u=URL.createObjectURL(blob); const a=document.createElement('a');
       a.href=u; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u);
-      document.getElementById('mTitle').textContent = `Drafted ${articles.length} post${articles.length===1?'':'s'} \u2014 saved as ${fname}`;
-      document.getElementById('mIntro').textContent = 'Schedule below. The file has just downloaded; move it somewhere durable. You can re-run to regenerate.';
-      document.getElementById('mBody').textContent = txt;
-      if(runBtn) runBtn.style.display='none';
+      // Stash post bodies for per-post Copy.
+      window.__lastDrafts = drafts.map(d=>d.body||'');
+      // Render per-post cards into the modal body. Replace the <pre> default
+      // with structured HTML; each post has its own Copy button. Setting
+      // innerHTML on the <pre> keeps the element in place (so showModal
+      // works normally next time); the inline style overrides the pre's
+      // monospace+pre-wrap defaults for this specific view.
+      const cards = articles.map((a,i)=>{
+        const body = (drafts[i] && drafts[i].body) || '(no draft returned for this article)';
+        const dateStr = fmt(dates[i]);
+        return `<div class="postcard">
+          <div class="postcard-h">
+            <div>
+              <div class="postcard-meta">Post ${i+1} of ${articles.length} \u00b7 ${esc(dateStr)}</div>
+              <div class="postcard-title">${esc(a.title)}</div>
+            </div>
+            <button class="btn sm" onclick="copyDraft(${i}, this)">Copy</button>
+          </div>
+          <textarea class="postcard-body" id="draft-${i}" readonly>${esc(body)}</textarea>
+        </div>`;
+      }).join('');
+      mBody.setAttribute('style','font-family:inherit;white-space:normal;background:transparent;padding:0;display:flex;flex-direction:column;gap:14px;max-height:62vh;overflow-y:auto');
+      mBody.innerHTML = cards;
+      document.getElementById('mTitle').textContent = `Drafted ${articles.length} post${articles.length===1?'':'s'}`;
+      document.getElementById('mIntro').innerHTML = `Click <b>Copy</b> on a post to grab just that one. The full schedule has also downloaded as <code>${esc(fname)}</code>.`;
     }catch(err){
       document.getElementById('mTitle').textContent='Couldn\u2019t draft posts';
       document.getElementById('mIntro').textContent=String(err && err.message || err);
-      document.getElementById('mBody').textContent='';
+      const m=document.getElementById('mBody'); if(m) m.textContent='';
+      if(mCopyBtn) mCopyBtn.style.display='';   // restore for any next use
     }
   });
+}
+/* Copy a single post body to clipboard using the same proven helper
+   that the rest of the app uses. Small visual confirmation on the button. */
+function copyDraft(i, btn){
+  const ta=document.getElementById('draft-'+i); if(!ta) return;
+  copyText(ta.value, 'Post '+(i+1));
+  if(btn){
+    const o=btn.textContent;
+    btn.textContent='Copied';
+    btn.disabled=true;
+    setTimeout(()=>{ btn.textContent=o; btn.disabled=false; }, 1400);
+  }
 }
 
 /* The Claude prompt. The anti-AI-voice rules are baked in here because
@@ -904,7 +954,7 @@ THESE RULES ARE NON-NEGOTIABLE. Posts that violate them are worse than useless b
    - NEVER open with "Delighted to share", "Excited to announce", "Thrilled to", "Honoured to", or any variant.
    - NEVER use these phrases: "in today\u2019s rapidly evolving landscape", "now more than ever", "game-changer", "deep dive", "unpack", "key takeaways", "thought-provoking", "must-read".
    - NEVER use rocket, fire, lightbulb, target, or sparkle emojis (or any emoji as decoration).
-   - NO hashtag soup at the end. One or two genuinely relevant hashtags maximum, only if natural.
+   - End with 1\u20132 relevant hashtags on a final line, drawn from the article\u2019s specific subject (e.g. #PrivateCredit, #ImpactInvesting, #Tokenisation, #SFDR, #Activism). Pick hashtags that a serious industry reader would actually search. NEVER use generic filler hashtags like #Finance, #Investing, #Business, #Markets, #Innovation. NEVER use more than two. Place them on their own line at the very end after the CTA lines.
    - NO em-dashes used as punctuation crutches when a full stop would do.
    - NO numbered listicles ("3 reasons why...").
 
@@ -916,8 +966,11 @@ THESE RULES ARE NON-NEGOTIABLE. Posts that violate them are worse than useless b
    - Be specific to the article\u2019s argument. Not vague summaries.
    - Lean toward sentence-fragment energy where it suits. Confidence over completeness.
    - Length: 80\u2013150 words. Shorter is usually better.
-   - Attribute the author by name and affiliation at the end of the post, as a short tag (not "by", just the name and org on its own line).
-   - Add a line at the end: "Read the full piece in ${ed.name||'this month\u2019s edition'}." (You don\u2019t need a link \u2014 the user will add it.)
+   - Name the author and their organisation naturally inside the body of the post (not as a tag at the end). For example, "Mark Kollar at Prosek Partners argues that..." or "Writing in this month's edition, Thomas Sharpe (AIMA) makes the case that..." Vary the placement across posts.
+   - End the post with TWO lines, exactly as shown, each on its own line:
+     Read the full piece [link to add]
+     Sign up [link to add]
+   These placeholders are for the user to fill in. Do not invent URLs or replace them.
 
 3. Output format \u2014 follow this EXACTLY:
    For each article, return:
@@ -1933,6 +1986,13 @@ function libRun(key){
 
 /* ---- Modals ---- */
 function showModal(title,intro,body,copyLabel){
+  // Reset any inline customisation a previous user of the modal left
+  // behind (e.g. the per-post launch modal swaps the body into card UI).
+  const mBodyEl=document.getElementById('mBody');
+  mBodyEl.removeAttribute('style');
+  mBodyEl.innerHTML='';
+  const mCopyEl=document.getElementById('mCopy');
+  if(mCopyEl) mCopyEl.style.display='';
   document.getElementById('mTitle').textContent=title;
   document.getElementById('mIntro').textContent=intro;
   document.getElementById('mBody').textContent=body;
