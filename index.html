@@ -768,7 +768,7 @@ function renderFeatures(ed){
   const guestRow = c => `<div class="feat-row">
     <div class="feat-main">
       <div class="feat-name">${esc(c.name||'(no name yet)')}</div>
-      <div class="feat-org">${esc(c.org||'—')}${c.focus?` · <span class="feat-focus">${esc(c.focus)}</span>`:''}</div>
+      <div class="feat-org">${esc(c.org||'—')}</div>
     </div>
     <span class="feat-pill ${statusClass(c.status)}">${esc(c.status)}</span>
   </div>`;
