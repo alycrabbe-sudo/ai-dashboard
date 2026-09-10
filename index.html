@@ -170,6 +170,17 @@
   .li-ai{appearance:none;border:1px solid var(--line-2);background:transparent;color:var(--ink-soft);font-family:'Archivo',sans-serif;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:5px;cursor:pointer;flex:none;transition:.14s}
   .li-ai:hover{border-color:var(--orange);color:var(--orange);background:var(--orange-dim)}
   .li-count{font-size:11px;color:var(--ink-faint);margin-top:10px;text-align:right}
+  .llm-master{display:flex;align-items:center;gap:8px;padding-bottom:11px;border-bottom:1px solid var(--line)}
+  .llm-master .lm-t{font-size:12px;color:var(--ink-soft);flex:1}
+  .llm-slot{padding-top:12px}
+  .llm-head{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .llm-name{font-size:12.5px;font-weight:600;color:var(--ink);flex:1;line-height:1.3}
+  .llm-note{font-size:11.5px;color:var(--ink-faint);line-height:1.45;margin-bottom:10px}
+  .llm-actions{display:flex;gap:7px;flex-wrap:wrap}
+  .llm-mini{margin-top:9px;text-align:right}
+  .llm-mini a{font-size:10.5px;color:var(--ink-faint);text-decoration:none;cursor:pointer}
+  .llm-mini a:hover{color:var(--orange)}
+  .llm-mini a+a{margin-left:12px}
   .done-empty{font-size:11.5px;color:var(--ink-faint);line-height:1.5;padding:4px 0}
   .done-scroll{max-height:340px;overflow-y:auto;margin:0 -4px;padding:0 4px}
   .done-scroll::-webkit-scrollbar{width:7px}
@@ -381,6 +392,11 @@
           <div class="widget">
             <div class="widget-h">News countdown</div>
             <div id="newsCountdown"></div>
+          </div>
+          <div class="widget">
+            <div class="widget-h">LLM checklist</div>
+            <div class="widget-sub" id="llmEditionLabel"></div>
+            <div id="llmChecklist"></div>
           </div>
           <div class="widget">
             <div class="widget-h">Features</div>
@@ -596,7 +612,7 @@ function makeEdition(name, pubISO, seed){
   const ed = {
     id: uid(), name: name||'', pub: pubISO||'', copy,
     synopsis: seed.synopsis||'', focus: seed.focus||'',
-    tasks: [], contributors: []
+    tasks: [], contributors: [], checklistUrl: ''
   };
   if(pubISO) ed.tasks = MASTER_TASKS.map(m => ({
     id: uid(), task:m.task, cat:m.cat, timing:m.timing,
@@ -624,7 +640,7 @@ function rebaseTasks(ed){
    version of this file picks up your existing data automatically
    (same browser + same origin). SCHEMA is the data-shape version:
    future builds migrate old data forward instead of discarding it. ---- */
-const SCHEMA = 4;
+const SCHEMA = 5;
 let DB = null;
 function save(d){
   if(d) DB = d;
@@ -681,6 +697,14 @@ function migrate(data){
           if(c.status in guestMap) c.status = guestMap[c.status];
         }
       });
+    });
+  }
+  // Schema 5: per-edition LLM checklist link. Every existing edition gets
+  //  an empty slot, which renders as "Not created" until you make that
+  //  month's copy of the master form and paste its link back in.
+  if(!data.schema || data.schema < 5){
+    (data.editions||[]).forEach(e=>{
+      if(e.checklistUrl===undefined) e.checklistUrl='';
     });
   }
   // Always: clear any malformed dates that slipped in before validation
@@ -1162,6 +1186,113 @@ function toggleLi(edId,i){
   save(); renderLinkedInChecklist(ed);
 }
 
+/* ---- LLM checklist ----
+   The dashboard does NOT own or generate the form. It holds one link
+   per edition and shows whether that month's copy exists yet.
+   Flow: open the master -> "Make a copy" in Google -> rename it for the
+   month -> paste the new link back here. From then on the edition's
+   home page links straight to its own checklist. */
+const LLM_MASTER_ID = '1T18H289pKF-42DJVO33XUMA9rrBvvzXUMd6r00OIKSg';
+/* Pull the form id out of any Google Forms URL so we can offer both the
+   live form and the editor, whichever the pasted link happened to be.
+   A published link (/forms/d/e/ID/viewform) carries a DIFFERENT id from
+   the form's own file id, so it can never be turned into an editor
+   link. We flag that case rather than building a URL that 404s. */
+function formRef(url){
+  const str=String(url||'');
+  const pub=str.match(/forms\/d\/e\/([A-Za-z0-9_-]{20,})/);
+  if(pub) return {id:pub[1], published:true};
+  const own=str.match(/forms\/d\/([A-Za-z0-9_-]{20,})/);
+  return own ? {id:own[1], published:false} : null;
+}
+function formView(url){
+  const r=formRef(url);
+  if(!r) return String(url||'');
+  return 'https://docs.google.com/forms/d/'+(r.published?'e/':'')+r.id+'/viewform';
+}
+function formEdit(url){
+  const r=formRef(url);
+  return (r && !r.published) ? 'https://docs.google.com/forms/d/'+r.id+'/edit' : '';
+}
+const LLM_MASTER_VIEW = 'https://docs.google.com/forms/d/'+LLM_MASTER_ID+'/viewform';
+const LLM_MASTER_COPY = 'https://docs.google.com/forms/d/'+LLM_MASTER_ID+'/copy';
+function openUrl(u){ window.open(u,'_blank','noopener'); }
+function checklistLabel(ed){ return (ed && ed.name) ? ed.name : 'This edition'; }
+
+function renderLLMChecklist(ed){
+  const box=document.getElementById('llmChecklist'); if(!box) return;
+  const lbl=document.getElementById('llmEditionLabel');
+  const master=`<div class="llm-master">
+      <div class="lm-t">Master checklist &mdash; the default, copied each month.</div>
+      <button class="btn sm" onclick="openUrl(LLM_MASTER_VIEW)">LLM checklist</button>
+    </div>`;
+  if(!ed){
+    box.innerHTML=master;
+    if(lbl) lbl.textContent='';
+    return;
+  }
+  if(lbl) lbl.textContent=checklistLabel(ed);
+  const name=checklistLabel(ed);
+  const url=(ed.checklistUrl||'').trim();
+  let slot;
+  if(url){
+    const edit=formEdit(url);
+    slot=`<div class="llm-slot">
+      <div class="llm-head">
+        <div class="llm-name">${esc(name)} checklist</div>
+        <span class="feat-pill go">Ready</span>
+      </div>
+      <div class="llm-actions">
+        <button class="btn sm" onclick="openUrl(${JSON.stringify(formView(url))})">Open ${esc(name)} checklist</button>
+      </div>
+      <div class="llm-mini">
+        ${edit?`<a onclick="openUrl(${JSON.stringify(edit)})">Edit questions</a>`:''}
+        <a onclick="setChecklistUrl('${ed.id}')">Replace link</a>
+        <a onclick="clearChecklistUrl('${ed.id}')">Remove</a>
+      </div>
+    </div>`;
+  } else {
+    slot=`<div class="llm-slot">
+      <div class="llm-head">
+        <div class="llm-name">${esc(name)} checklist</div>
+        <span class="feat-pill warn">Not created</span>
+      </div>
+      <div class="llm-note">Make this month's copy in Google, name it &ldquo;${esc(name)} checklist&rdquo;, then paste its link back here.</div>
+      <div class="llm-actions">
+        <button class="btn sm" onclick="createChecklist('${ed.id}')">Create ${esc(name)} checklist</button>
+        <button class="btn sm ghost" onclick="setChecklistUrl('${ed.id}')">Paste link</button>
+      </div>
+    </div>`;
+  }
+  box.innerHTML=master+slot;
+}
+/* Opens Google's "Make a copy" dialogue for the master form. Google does
+   the duplicating; we just send you there and wait for the link back. */
+function createChecklist(edId){
+  const ed=DB.editions.find(e=>e.id===edId); if(!ed) return;
+  openUrl(LLM_MASTER_COPY);
+  toast('Name it "'+checklistLabel(ed)+' checklist", then come back and paste the link');
+}
+function setChecklistUrl(edId){
+  const ed=DB.editions.find(e=>e.id===edId); if(!ed) return;
+  formModal(checklistLabel(ed)+' checklist link', [
+    {key:'url', label:'Form link', value:ed.checklistUrl||'',
+      ph:'https://docs.google.com/forms/d/.../edit',
+      hint:'Paste the URL of this month\'s copy. Either the editor or the live form link works, the dashboard stores both.'},
+  ], v=>{
+    const raw=(v.url||'').trim();
+    if(!raw){ ed.checklistUrl=''; save(); renderLLMChecklist(ed); toast('Checklist link cleared'); return; }
+    if(!/^https?:\/\//i.test(raw)){ toast('That does not look like a link, so nothing was saved'); return; }
+    ed.checklistUrl=raw; save(); renderLLMChecklist(ed);
+    toast(formRef(raw) ? checklistLabel(ed)+' checklist linked' : 'Saved, though that is not a Google Forms link');
+  });
+}
+function clearChecklistUrl(edId){
+  const ed=DB.editions.find(e=>e.id===edId); if(!ed) return;
+  ed.checklistUrl=''; save(); renderLLMChecklist(ed);
+  toast('Checklist link removed');
+}
+
 /* Completed-jobs panel: every Done task for the edition, each with a
    ticked box. Un-ticking sends the job BACK into the workflow as
    'In progress' (you re-engaged with it; it isn't untouched). */
@@ -1301,6 +1432,7 @@ function renderCommand(){
   renderFeatures(focus);
   renderNewsCountdown(focus);
   renderLinkedInChecklist(focus);
+  renderLLMChecklist(focus);
   renderDoneList(focus);
 
   // "What matters": two views — by category (accordions) or by urgency (flat, banded)
@@ -1604,7 +1736,7 @@ function addGuestRow(){
   const sel=document.getElementById('conEd');
   const ed=DB.editions.find(e=>e.id===sel.value)||DB.editions.find(e=>e.id===DB.focusId)||DB.editions[0];
   ed.contributors.push({ id:uid(), org:'', name:'', focus:'', status:'Needed', type:'Guest' });
-  save();
+  save(); syncFeaturesIfFocus(ed.id);
   document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));
   document.querySelector('#nav button[data-tab="contributors"]').classList.add('active');
   document.querySelectorAll('.tabpane').forEach(p=>p.classList.remove('active'));
@@ -1616,18 +1748,28 @@ function addRegularRow(){
   const sel=document.getElementById('conEd');
   const ed=DB.editions.find(e=>e.id===sel.value)||DB.editions.find(e=>e.id===DB.focusId)||DB.editions[0];
   ed.contributors.push({ id:uid(), org:'', name:'', focus:'', status:'Waiting', type:'Regular' });
-  save();
+  save(); syncFeaturesIfFocus(ed.id);
   sel.value=ed.id; renderContributors();
 }
 // Back-compat alias: any old caller of addContributorRow gets a guest.
 function addContributorRow(){ addGuestRow(); }
+/* Keep the home-page Features module honest: edits made on the
+   Contributors tab used to sit stale until a tab-switch or refresh. */
+function syncFeaturesIfFocus(edId){
+  if(edId && DB.focusId && edId!==DB.focusId) return;
+  const focus=DB.editions.find(e=>e.id===DB.focusId)||DB.editions[0];
+  if(focus) renderFeatures(focus);
+}
 function setConField(edId,cId,f,v){
-  const ed=DB.editions.find(e=>e.id===edId);
-  const c=ed.contributors.find(x=>x.id===cId); c[f]=v; save();
+  const ed=DB.editions.find(e=>e.id===edId); if(!ed) return;
+  const c=(ed.contributors||[]).find(x=>x.id===cId); if(!c) return;
+  c[f]=v; save();
+  syncFeaturesIfFocus(edId);
 }
 function delContributor(edId,cId){
-  const ed=DB.editions.find(e=>e.id===edId);
-  ed.contributors=ed.contributors.filter(x=>x.id!==cId); save(); renderContributors();
+  const ed=DB.editions.find(e=>e.id===edId); if(!ed) return;
+  ed.contributors=(ed.contributors||[]).filter(x=>x.id!==cId); save(); renderContributors();
+  syncFeaturesIfFocus(edId);
 }
 
 /* ============================================================
