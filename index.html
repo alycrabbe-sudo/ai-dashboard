@@ -1243,10 +1243,10 @@ function renderLLMChecklist(ed){
         <span class="feat-pill go">Ready</span>
       </div>
       <div class="llm-actions">
-        <button class="btn sm" onclick="openUrl(${JSON.stringify(formView(url))})">Open ${esc(name)} checklist</button>
+        <button class="btn sm" onclick="openChecklist('${ed.id}')">Open ${esc(name)} checklist</button>
       </div>
       <div class="llm-mini">
-        ${edit?`<a onclick="openUrl(${JSON.stringify(edit)})">Edit questions</a>`:''}
+        ${edit?`<a onclick="openChecklistEditor('${ed.id}')">Edit questions</a>`:''}
         <a onclick="setChecklistUrl('${ed.id}')">Replace link</a>
         <a onclick="clearChecklistUrl('${ed.id}')">Remove</a>
       </div>
@@ -1286,6 +1286,20 @@ function setChecklistUrl(edId){
     ed.checklistUrl=raw; save(); renderLLMChecklist(ed);
     toast(formRef(raw) ? checklistLabel(ed)+' checklist linked' : 'Saved, though that is not a Google Forms link');
   });
+}
+/* Look the URL up at click time rather than baking it into the markup:
+   inlining a URL inside an onclick attribute is a quoting minefield. */
+function openChecklist(edId){
+  const ed=DB.editions.find(e=>e.id===edId); if(!ed) return;
+  const u=(ed.checklistUrl||'').trim();
+  if(!u){ toast('No checklist linked for this edition yet'); return; }
+  openUrl(formView(u));
+}
+function openChecklistEditor(edId){
+  const ed=DB.editions.find(e=>e.id===edId); if(!ed) return;
+  const u=formEdit(ed.checklistUrl||'');
+  if(!u){ toast('No editor link available for this checklist'); return; }
+  openUrl(u);
 }
 function clearChecklistUrl(edId){
   const ed=DB.editions.find(e=>e.id===edId); if(!ed) return;
